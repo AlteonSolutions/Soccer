@@ -1,6 +1,6 @@
 ---
 description: Verify this clone can actually run before starting work
-allowed-tools: Bash(node -v), Bash(git status:*), Bash(git branch:*), Bash(ls:*), Bash(cat:*), Bash(npm run setup:*), Bash(npm ls:*)
+allowed-tools: Bash(node -v), Bash(git status:*), Bash(git branch:*), Bash(ls:*), Bash(cat:*), Bash(pnpm run setup:*), Bash(pnpm ls:*)
 ---
 
 Every one of the projects this template came from broke on a fresh clone in a different way, and in
@@ -15,5 +15,5 @@ order, and report what is missing rather than guessing:
    present. Name the specific command that would provide it.
 5. `git status` is clean and I am on the branch I expect. Name the branch.
 
-Then say, in one line, whether `{{DEV_CMD}}` will work. If it won't, say exactly what to run first.
-Do not run `{{SETUP_CMD}}` on your own initiative if the tree is dirty — tell me first.
+Then say, in one line, whether `pnpm run dev` will work. If it won't, say exactly what to run first.
+Do not run `pnpm run setup` on your own initiative if the tree is dirty — tell me first.

@@ -1,0 +1,7 @@
+# Generated or foreign files Prettier must not touch.
+pnpm-lock.yaml
+dist/
+coverage/
+node_modules/
+# Markdown is hand-wrapped at 100 columns; Prettier would re-pad every table in DECISIONS.md.
+*.md

@@ -1,0 +1,9 @@
+{
+  // Root project: typechecks the root-level TypeScript files (tooling config). Workspace packages
+  // are typechecked by their own tsconfig via `pnpm -r run typecheck`.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["vitest.config.ts"]
+}

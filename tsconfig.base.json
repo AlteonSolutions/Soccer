@@ -1,0 +1,22 @@
+{
+  // Shared compiler options. Every package's tsconfig.json extends this and adds only paths.
+  // ESM NodeNext means every relative import must carry a `.js` extension, even from `.ts` source.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "strict": true,
+    // Indexing an array or record yields `T | undefined`. Cheap on day one, expensive to retrofit.
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "sourceMap": true
+  }
+}

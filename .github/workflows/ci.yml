@@ -19,23 +19,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # {{NODE_MAJOR}} must equal package.json engines and any IaC runtime param.
+      # Installs the pnpm version pinned in package.json `packageManager`. Must run before
+      # setup-node, whose `cache: pnpm` needs the pnpm binary on PATH.
+      - uses: pnpm/action-setup@v4
+
+      # 22 must equal package.json engines and any IaC runtime param.
       - uses: actions/setup-node@v4
         with:
-          node-version: "{{NODE_MAJOR}}"
-          cache: "{{PKG_MANAGER}}"
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install
-        run: {{CI_INSTALL_CMD}}   # frozen lockfile
+        run: pnpm install --frozen-lockfile # frozen lockfile
 
       - name: Typecheck (all packages)
-        run: {{GATE_TYPECHECK_CMD}}
+        run: pnpm run typecheck
 
       - name: Lint
-        run: {{GATE_LINT_CMD}}
+        run: pnpm run lint
 
       - name: Format check
-        run: {{GATE_FORMAT_CMD}}
+        run: pnpm run format:check
 
       - name: Test
-        run: {{GATE_TEST_CMD}}
+        run: pnpm test

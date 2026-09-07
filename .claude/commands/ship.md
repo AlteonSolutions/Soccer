@@ -1,6 +1,6 @@
 ---
 description: Commit the current work with the house conventions, docs included
-allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(npm run:*), Bash(npm test:*)
+allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(git add:*), Bash(git commit:*), Bash(pnpm run:*), Bash(pnpm test:*)
 ---
 
 Ship what is currently uncommitted. Steps, in order:
@@ -21,7 +21,7 @@ Message format:
 - Trailers, on every commit:
 
   ```
-  Co-Authored-By: {{CLAUDE_TRAILER}}
+  Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
   Claude-Session: <this session's url>
   ```
 

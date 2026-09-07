@@ -1,58 +1,50 @@
-# alteon-project-template
+# soccer
 
-The standard starting point for Alteon Solutions projects. Synthesized from audits of four existing
-Claude Code projects — every rule in here earned its place by having been a real correction, a real
-outage, or a real thing that broke on a fresh clone.
+A small web app for the kids' soccer team its maintainer coaches: snack sign-up and reminder emails
+for parents.
 
-**This README is replaced during init.** If you are reading it inside a project, init has not run.
+## Quick start
 
-## Starting a new project
+```
+pnpm run setup      # checks Node 22 + pnpm, installs frozen, writes .env, wires git hooks
+pnpm run dev        # starts every app's dev server (no app exists yet — see STATUS.md)
+pnpm run gate       # typecheck every package, lint, format check, tests — run before "done"
+```
 
-1. On GitHub: **Use this template → Create a new repository**.
-2. Clone it and open Claude Code in it.
-3. Paste: `Read INIT.md and follow it exactly.`
+If `pnpm` is not on your PATH: `corepack enable && corepack prepare pnpm@10.33.0 --activate`.
+Fresh-clone details and what each step checks for: `SETUP.md`.
 
-`INIT.md` interviews you on the ~12 real decisions, fills all 27 placeholders across every file,
-scaffolds `package.json` / `.env.example` / docs, wires the hooks, records the decisions, verifies
-the result, and deletes itself.
+## Layout
 
-Doing it by hand instead: work through `SETUP.md` top to bottom. Same outcome, more typing, and the
-`NODE_MAJOR`-in-three-places check is on you.
+```
+apps/                 deployable apps (empty until the first one lands)
+packages/shared/      @soccer/shared — types, zod schemas, and the config module
+  src/config.ts       the only place process.env is read; fails fast naming the variable
+  test/               mirrors src/
+scripts/setup.mjs     `pnpm run setup`
+docs/spec/            what each feature does, written before it is built
+docs/runbooks/        how to operate it once deployed
+.claude/              house commands (/gate, /ship, /decision, /preflight), hooks, permissions
+.githooks/pre-commit  typecheck + lint + format on every commit; tests stay in `gate` and CI
+```
 
-## What's in here
+pnpm workspaces, one lockfile at the root. Node 22 is pinned in `package.json` `engines`, in
+`.github/workflows/ci.yml`, and nowhere else yet; those change together.
 
-| Path | What it is |
-|---|---|
-| `CLAUDE.md` | The house rules. The main artifact — everything else enforces some line in it. |
-| `SETUP.md` | Ordered fresh-clone checklist, with which placeholders belong to which step. |
-| `DECISIONS.md` | Entry format, plus the open-variant tables with a recommended default per row. |
-| `INIT.md` | The one-time bootstrap prompt. Deleted at the end of init. |
-| `.claude/settings.json` | Permission allow/deny list and the session-logging hooks. |
-| `.claude/commands/` | `/gate`, `/preflight`, `/ship`, `/decision`. |
-| `.claude/hooks/session-log.sh` | Build-time ledger → `.claude/sessions.csv`, persisted to a `worklog` branch. |
-| `.githooks/pre-commit` | Typecheck + lint + format, enforced. Tests stay in `gate` and CI. |
-| `.github/workflows/ci.yml.tpl` | CI. Parked as `.tpl` until its placeholders are filled — see below. |
-| `.gitignore` | Includes the Claude Code entries and blocks customer-data formats by extension. |
+## Architecture
 
-## Two things that are easy to get wrong
+- **TypeScript, ESM `NodeNext`** everywhere. Relative imports carry a `.js` extension even in `.ts`.
+- **Entry points stay thin.** Each app's `src/routes/` holds handlers that call named functions in
+  `lib/`, which import no framework, so tests call them directly.
+- **One shared module.** `@soccer/shared` owns every type and zod schema used by more than one
+  place. Apps consume its `dist`; Vitest aliases it to source (see `vitest.config.ts`).
+- **Configuration is read once**, in `packages/shared/src/config.ts`, validated with zod, with a
+  `ConfigError` that names the offending variables and says what to do. ESLint forbids
+  `process.env` anywhere else. `.env.example` lists every variable.
+- **Quality gate.** `pnpm run gate` = typecheck (every package) + ESLint flat + Prettier check +
+  Vitest against source. The pre-commit hook runs the fast half; CI runs all of it on every push.
+- **Deploy target: none yet.** When one is chosen it gets a workflow that `needs: test` and a
+  dated entry in `DECISIONS.md`.
 
-**The CI workflow is parked.** In template state, `run: {{GATE_TEST_CMD}}` is not valid YAML — `{`
-opens a flow mapping. Left as `ci.yml`, every push to this template repo and to every repo created
-from it would fail with an invalid-workflow error before you'd written a line of code. It stays
-`.tpl` (which GitHub ignores) until init fills it and renames it.
-
-**`npm` is hardcoded in two places the placeholders don't reach**: the permission patterns in
-`.claude/settings.json` and the `allowed-tools` frontmatter in `.claude/commands/*.md`. If a project
-uses pnpm, those patterns silently stop matching — nothing errors, you just get an approval prompt
-for every command until you give up on the allow-list. Init rewrites them; if you're hand-filling,
-do it yourself.
-
-## Changing the template
-
-Fixes belong here, not in the project that found them. When a project adds a line under **Pinned
-preferences** in its `CLAUDE.md` and that correction would apply anywhere, port it back and note the
-originating project in the commit body.
-
-Re-audit periodically: point the audit prompt at projects started *from* this template and diff the
-`CLAUDE.md`, `.claude/`, and friction-log sections. Anything that drifted is either a gap in the
-template or a rule nobody actually follows — both are worth knowing.
+The rules the code follows are in `CLAUDE.md`; why they were chosen is in `DECISIONS.md`; where
+things stand right now is in `STATUS.md`.

@@ -39,8 +39,11 @@ param coachEmail string = ''
 @description('Public URL of the site, used in emails. Set after the custom domain is live.')
 param siteUrl string = ''
 
-@description('Your verified custom email domain (e.g. example.org). Empty uses the Azure-managed domain, which works with no DNS setup.')
+@description('Your custom email domain (e.g. alteonapps.com). Creates the domain resource so its DNS verification records appear in the portal; empty skips it.')
 param emailCustomDomain string = ''
+
+@description('Send from the custom email domain instead of the Azure-managed one. Flip to true only after every record for it shows Verified; linking an unverified domain fails the deployment.')
+param linkCustomEmailDomain bool = false
 
 @description('Send real email (on) or capture (off). Leave off until the sender domain is verified and you have tested.')
 @allowed(['on', 'off'])
@@ -48,7 +51,8 @@ param emailLive string = 'off'
 
 var suffix = uniqueString(resourceGroup().id)
 var storageName = toLower('${namePrefix}${suffix}')
-var useCustomEmailDomain = !empty(emailCustomDomain)
+var hasCustomEmailDomain = !empty(emailCustomDomain)
+var useCustomEmailDomain = hasCustomEmailDomain && linkCustomEmailDomain
 
 // ---------------------------------------------------------------- storage
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
@@ -87,21 +91,21 @@ resource emailService 'Microsoft.Communication/emailServices@2023-04-01' = {
   properties: { dataLocation: 'United States' }
 }
 
-resource azureManagedDomain 'Microsoft.Communication/emailServices/domains@2023-04-01' = if (!useCustomEmailDomain) {
+resource azureManagedDomain 'Microsoft.Communication/emailServices/domains@2023-04-01' = {
   parent: emailService
   name: 'AzureManagedDomain'
   location: 'global'
   properties: { domainManagement: 'AzureManaged' }
 }
 
-resource customDomain 'Microsoft.Communication/emailServices/domains@2023-04-01' = if (useCustomEmailDomain) {
+resource customDomain 'Microsoft.Communication/emailServices/domains@2023-04-01' = if (hasCustomEmailDomain) {
   parent: emailService
   name: emailCustomDomain
   location: 'global'
   properties: { domainManagement: 'CustomerManaged', userEngagementTracking: 'Disabled' }
 }
 
-resource customSender 'Microsoft.Communication/emailServices/domains/senderUsernames@2023-04-01' = if (useCustomEmailDomain) {
+resource customSender 'Microsoft.Communication/emailServices/domains/senderUsernames@2023-04-01' = if (hasCustomEmailDomain) {
   parent: customDomain
   name: 'snacks'
   properties: { username: 'snacks', displayName: '${teamName} Snacks' }
@@ -118,7 +122,7 @@ resource communication 'Microsoft.Communication/communicationServices@2023-04-01
 
 var emailFrom = useCustomEmailDomain
   ? 'snacks@${emailCustomDomain}'
-  : 'DoNotReply@${azureManagedDomain!.properties.fromSenderDomain}'
+  : 'DoNotReply@${azureManagedDomain.properties.fromSenderDomain}'
 var acsConnectionString = communication.listKeys().primaryConnectionString
 
 // Shared by both Function hosts: exactly the variables packages/shared/src/config.ts declares.
@@ -204,3 +208,5 @@ output remindersFunctionAppName string = reminders.name
 output storageAccountName string = storage.name
 output emailFrom string = emailFrom
 output emailDomainResourceId string = useCustomEmailDomain ? customDomain.id : azureManagedDomain.id
+output customEmailDomainResourceId string = hasCustomEmailDomain ? customDomain.id : ''
+

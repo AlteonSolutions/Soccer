@@ -33,10 +33,17 @@ client bundle and handler logic (in-memory storage) and screenshotted at desktop
   provider.
 - `platform.apiRuntime: node:22` in `staticwebapp.config.json` is expected to be accepted by SWA.
 
-**Next.**
+**Go-live checklist** (target: https://signup.alteonapps.com, sender snacks@alteonapps.com).
+Each item is a step in `docs/runbooks/first-deploy.md`.
 
-1. Run the first-deploy runbook; fix whatever the Bicep needs; commit the fix with the first line of
-   the file changed to say it is applied.
-2. Add the custom domain and verify the email domain (runbook steps 7–8), then `EMAIL_LIVE=on`.
-3. After the first real season data: decide whether parents need to release their own slot (would
-   need a per-claim secret link in the confirmation email).
+- [ ] Merge this branch to `main`.
+- [ ] Runbook 1–2: resource group, apply the Bicep. Fix and commit whatever the first run needs;
+      change the first line of `infra/main.bicep` and `main.bicepparam` to say it is applied.
+- [ ] Runbook 3–4: two secrets and two variables in GitHub.
+- [ ] Runbook 5: deploy from `main`; invite yourself as `admin`; paste the team list; add games.
+- [ ] Runbook 6: CNAME `signup` → the Static Web App; attach the hostname.
+- [ ] Runbook 7: four DNS records for `alteonapps.com` email; verify; `linkCustomEmailDomain = true`.
+- [ ] Runbook 8: `emailLive = 'on'`; sign up once yourself and receive the confirmation.
+
+**After that.** Decide whether parents need to release their own slot (would need a per-claim
+secret link in the confirmation email). Watch Application Insights the first Monday and Thursday.

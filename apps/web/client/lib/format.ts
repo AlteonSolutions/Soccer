@@ -24,6 +24,7 @@ export function formatKickoff(kickoff: string): string {
   return `${hour12}:${String(min).padStart(2, "0")} ${suffix}`;
 }
 
+/** "Snacks: The Nguyens" — a label, not a sentence, so plural family names never read wrong. */
 export function describeSnack(game: Pick<PublicGame, "snack_by">): string {
-  return game.snack_by ? `${game.snack_by} is bringing snacks` : "Nobody yet";
+  return game.snack_by ? `Snacks: ${game.snack_by}` : "Snacks: nobody yet";
 }

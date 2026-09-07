@@ -162,3 +162,14 @@ td {
 .admin-form button {
   align-self: end;
 }
+
+/* Narrow screens: stack the game text above the snack slot instead of squeezing it into a column. */
+@media (max-width: 640px) {
+  .game {
+    grid-template-columns: 1fr;
+  }
+  .snack {
+    text-align: left;
+    min-width: 0;
+  }
+}

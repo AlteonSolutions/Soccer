@@ -15,7 +15,7 @@ describe("format", () => {
   });
 
   it("describes the snack slot by name only", () => {
-    expect(describeSnack({ snack_by: "Sam Rivera" })).toBe("Sam Rivera is bringing snacks");
-    expect(describeSnack({ snack_by: null })).toBe("Nobody yet");
+    expect(describeSnack({ snack_by: "The Nguyens" })).toBe("Snacks: The Nguyens");
+    expect(describeSnack({ snack_by: null })).toBe("Snacks: nobody yet");
   });
 });

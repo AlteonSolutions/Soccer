@@ -1,7 +1,8 @@
 /*
- * A parent signing up for a game's snack slot. The primary action is the stored claim; the
- * confirmation email is a secondary side effect that may never fail it — a parent whose
- * confirmation bounced still has the slot, and the schedule still shows their name.
+ * A parent signing up for a game's snack slot by picking their player from the team list. The
+ * email comes from that list and is copied onto the claim, so the schedule never has to ask for
+ * it. The primary action is the stored claim; the confirmation email is a secondary side effect
+ * that may never fail it — a family whose confirmation bounced still has the slot.
  */
 import {
   AppError,
@@ -34,7 +35,17 @@ export async function createClaim(
   input: ClaimInput,
   ctx: ClaimContext,
 ): Promise<ClaimResult> {
-  const game = await repo.getGame(input.game_id);
+  const [game, member] = await Promise.all([
+    repo.getGame(input.game_id),
+    repo.getRosterMember(input.player),
+  ]);
+  if (!member) {
+    throw new AppError(
+      "VALIDATION",
+      "Pick a player from the team list.",
+      "Claim named a player not on the roster; the client should only offer roster names.",
+    );
+  }
   if (!game) {
     throw new AppError(
       "NOT_FOUND",
@@ -50,7 +61,13 @@ export async function createClaim(
     );
   }
 
-  const claim: Claim = { ...input, created_at: ctx.now.toISOString(), reminded_at: null };
+  const claim: Claim = {
+    game_id: game.id,
+    player: member.player,
+    email: member.email,
+    created_at: ctx.now.toISOString(),
+    reminded_at: null,
+  };
   await repo.createClaim(claim);
 
   let confirmationSent = false;
@@ -71,5 +88,15 @@ export async function createClaim(
     );
   }
 
-  return { game: { ...game, snack_by: claim.parent_name }, confirmation_sent: confirmationSent };
+  return {
+    game: {
+      id: game.id,
+      date: game.date,
+      kickoff: game.kickoff,
+      opponent: game.opponent,
+      location: game.location,
+      snack_by: claim.player,
+    },
+    confirmation_sent: confirmationSent,
+  };
 }

@@ -40,16 +40,25 @@ describe("admin", () => {
     expect(await repo.getGame(game().id)).toBeDefined();
   });
 
-  it("adds pasted roster emails once each, sorted, and removes one", async () => {
+  it("adds pasted players sorted by name, lets a re-add correct the email, and removes by name", async () => {
     const repo = createMemoryRepo();
     const now = new Date("2026-09-01T00:00:00Z");
     const members = await addRosterMembers(
       repo,
-      { emails: ["b@example.com", "a@example.com", "b@example.com"] },
+      {
+        members: [
+          { player: "Mia Chen", email: "chen@example.com" },
+          { player: "Leo Rivera", email: "old@example.com" },
+          { player: "leo rivera", email: "rivera@example.com" },
+        ],
+      },
       now,
     );
-    expect(members.map((m) => m.email)).toEqual(["a@example.com", "b@example.com"]);
-    await removeRosterMember(repo, "a@example.com");
-    expect((await repo.listRoster()).map((m) => m.email)).toEqual(["b@example.com"]);
+    expect(members.map((m) => `${m.player} ${m.email}`)).toEqual([
+      "leo rivera rivera@example.com",
+      "Mia Chen chen@example.com",
+    ]);
+    await removeRosterMember(repo, "Leo Rivera");
+    expect((await repo.listRoster()).map((m) => m.player)).toEqual(["Mia Chen"]);
   });
 });

@@ -5,6 +5,7 @@
 import type { AdminGame, RosterMember } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
 import { formatDate, formatKickoff } from "./lib/format.js";
+import { parseRosterLines } from "./lib/roster.js";
 
 const status = document.getElementById("status") as HTMLParagraphElement;
 const rows = document.getElementById("rows") as HTMLTableSectionElement;
@@ -59,7 +60,7 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   when.append(sub);
   const email = cell(game.claim ? game.claim.email : "—");
   email.className = "mono";
-  tr.append(when, cell(game.claim ? game.claim.parent_name : "—"), email);
+  tr.append(when, cell(game.claim ? game.claim.player : "—"), email);
   const actions = document.createElement("td");
   actions.className = "actions";
   if (game.claim) {
@@ -82,13 +83,17 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
 
 function renderMember(member: RosterMember): HTMLLIElement {
   const li = document.createElement("li");
+  const who = document.createElement("span");
+  const name = document.createElement("strong");
+  name.textContent = member.player;
   const email = document.createElement("span");
-  email.className = "mono";
+  email.className = "mono sub";
   email.textContent = member.email;
+  who.append(name, email);
   li.append(
-    email,
+    who,
     actionButton("Remove", "danger", () =>
-      request("DELETE", `/api/admin/roster/${encodeURIComponent(member.email)}`),
+      request("DELETE", `/api/admin/roster/${encodeURIComponent(member.player)}`),
     ),
   );
   return li;
@@ -99,7 +104,8 @@ function renderRoster(members: RosterMember[]): void {
   if (members.length === 0) {
     const li = document.createElement("li");
     li.className = "empty";
-    li.textContent = "No addresses yet, so the Thursday reminder goes to nobody.";
+    li.textContent =
+      "No players yet, so nobody can sign up and the Thursday reminder goes to nobody.";
     rosterList.append(li);
   }
 }
@@ -120,22 +126,22 @@ async function load(): Promise<void> {
 
 rosterForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const raw = String(new FormData(rosterForm).get("emails") ?? "");
-  const emails = raw
-    .split(/[\s,;]+/)
-    .map((e) => e.trim())
-    .filter(Boolean);
+  const parsed = parseRosterLines(String(new FormData(rosterForm).get("lines") ?? ""));
+  if (parsed.length === 0) {
+    setStatus("Each line needs a player name, a comma, then the parent's email.", true);
+    return;
+  }
   const submit = rosterForm.querySelector("button[type=submit]") as HTMLButtonElement;
   submit.disabled = true;
   try {
     const { members } = await request<{ members: RosterMember[] }>("POST", "/api/admin/roster", {
-      emails,
+      members: parsed,
     });
     rosterForm.reset();
     renderRoster(members);
-    setStatus(`${members.length} address${members.length === 1 ? "" : "es"} on the list.`);
+    setStatus(`${members.length} player${members.length === 1 ? "" : "s"} on the team list.`);
   } catch (error) {
-    report(error, "Could not add those addresses.");
+    report(error, "Could not add those players.");
   } finally {
     submit.disabled = false;
   }

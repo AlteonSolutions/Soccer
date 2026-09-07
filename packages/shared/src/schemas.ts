@@ -8,8 +8,9 @@
  */
 import { z } from "zod";
 
-// 1–60 characters: long enough for "Grandma & Grandpa Hernandez", short enough to fit a table cell.
-const parentName = z.string().trim().min(1).max(60);
+// 1–60 characters: long enough for a double-barrelled name, short enough to fit a table cell.
+const playerName = z.string().trim().min(1).max(60);
+const emailAddress = z.email().trim().toLowerCase().max(254); // 254 is the RFC 5321 maximum
 
 // YYYY-MM-DD-<slug>: sortable by date, readable in a URL.
 export const gameIdSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -31,20 +32,19 @@ export type Game = z.infer<typeof gameSchema>;
 export const newGameInputSchema = gameSchema.omit({ id: true, team_reminded_at: true });
 export type NewGameInput = z.infer<typeof newGameInputSchema>;
 
-/** What a parent submits to claim a game's snack slot. */
+/** What a parent submits to claim a game's snack slot: which player, chosen from the team list. */
 export const claimInputSchema = z
   .object({
     game_id: gameIdSchema,
-    parent_name: parentName,
-    // 254 is the RFC 5321 maximum for an address.
-    email: z.email().trim().toLowerCase().max(254),
+    player: playerName,
   })
   .strict();
 export type ClaimInput = z.infer<typeof claimInputSchema>;
 
-/** A stored claim. `email` lives here and in the admin API only. */
+/** A stored claim. `email` is copied from the team list at sign-up; it lives here and in the admin API only. */
 export const claimSchema = claimInputSchema
   .extend({
+    email: emailAddress,
     created_at: z.iso.datetime(),
     // Table Storage cannot store null: an un-reminded claim has no column at all, so absent = null.
     reminded_at: z.iso.datetime().nullable().default(null),
@@ -52,15 +52,16 @@ export const claimSchema = claimInputSchema
   .strict();
 export type Claim = z.infer<typeof claimSchema>;
 
-/** A game as the public site sees it: who is bringing snacks, by name, never by email. */
+/** A game as the public site sees it: which player's family has snacks, never an email. */
 export const publicGameSchema = gameSchema
   .omit({ team_reminded_at: true })
-  .extend({ snack_by: parentName.nullable() })
+  .extend({ snack_by: playerName.nullable() })
   .strict();
 export type PublicGame = z.infer<typeof publicGameSchema>;
 
+/** The schedule plus the player names to pick from. Names only: the emails never leave the server. */
 export const scheduleResponseSchema = z
-  .object({ team_name: z.string(), games: z.array(publicGameSchema) })
+  .object({ team_name: z.string(), games: z.array(publicGameSchema), players: z.array(playerName) })
   .strict();
 export type ScheduleResponse = z.infer<typeof scheduleResponseSchema>;
 
@@ -68,18 +69,24 @@ export type ScheduleResponse = z.infer<typeof scheduleResponseSchema>;
 export const adminGameSchema = gameSchema.extend({ claim: claimSchema.nullable() }).strict();
 export type AdminGame = z.infer<typeof adminGameSchema>;
 
-/** A family on the team's email list. Coach-managed; never shown outside the admin page. */
+/** A player on the team and the parent email behind them. Coach-managed; the email is never shown outside the admin page. */
 export const rosterMemberSchema = z
   .object({
-    email: z.email().trim().toLowerCase().max(254),
+    player: playerName,
+    email: emailAddress,
     added_at: z.iso.datetime(),
   })
   .strict();
 export type RosterMember = z.infer<typeof rosterMemberSchema>;
 
-/** Bulk add: the coach pastes the team list. 100 is far above any youth team's family count. */
+/** Bulk add or correct: the coach pastes "Player Name, parent@example.com" lines. 100 is far above any youth team. */
 export const rosterInputSchema = z
-  .object({ emails: z.array(z.email().trim().toLowerCase().max(254)).min(1).max(100) })
+  .object({
+    members: z
+      .array(z.object({ player: playerName, email: emailAddress }).strict())
+      .min(1)
+      .max(100),
+  })
   .strict();
 export type RosterInput = z.infer<typeof rosterInputSchema>;
 

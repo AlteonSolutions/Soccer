@@ -7,7 +7,7 @@
  * The week, as the coach described it: games are on Saturday. Monday, the family on snacks gets
  * a reminder. Thursday, the whole roster gets a reminder about Saturday's game.
  */
-import type { Claim, Game, NewGameInput, PublicGame } from "./schemas.js";
+import type { Claim, Game, NewGameInput, PublicGame, RosterMember } from "./schemas.js";
 
 /** Calendar date (YYYY-MM-DD) of `now` in the team's time zone, not in UTC. */
 export function localDateIso(now: Date, timeZone: string): string {
@@ -62,7 +62,7 @@ export function sortByDate<T extends Pick<Game, "date" | "kickoff">>(games: read
   );
 }
 
-/** The public schedule: every game with the claimant's name and nothing else from the claim. */
+/** The public schedule: every game with the player whose family has snacks, nothing else from the claim. */
 export function toPublicSchedule(games: readonly Game[], claims: readonly Claim[]): PublicGame[] {
   const byGame = new Map(claims.map((c) => [c.game_id, c]));
   // Explicit columns: a new field on Game (like team_reminded_at) stays private until named here.
@@ -72,8 +72,18 @@ export function toPublicSchedule(games: readonly Game[], claims: readonly Claim[
     kickoff: game.kickoff,
     opponent: game.opponent,
     location: game.location,
-    snack_by: byGame.get(game.id)?.parent_name ?? null,
+    snack_by: byGame.get(game.id)?.player ?? null,
   }));
+}
+
+/** Player names for the sign-up picker, sorted, and nothing else from the roster. */
+export function toPlayerNames(roster: readonly RosterMember[]): string[] {
+  return roster.map((m) => m.player).sort((a, b) => a.localeCompare(b));
+}
+
+/** Thursday's recipients: one email per address, however many players share a parent. */
+export function rosterEmails(roster: readonly RosterMember[]): string[] {
+  return [...new Set(roster.map((m) => m.email))].sort();
 }
 
 function inWindow(game: Pick<Game, "date">, today: string, days: number): boolean {
@@ -141,8 +151,8 @@ export function confirmationEmail(
   return {
     subject: `${teamName}: you're on snacks for ${game.date}`,
     text:
-      `Hi ${claim.parent_name},\n\n` +
-      `Thanks for signing up to bring snacks for the ${teamName} game on ${describeGame(game)}.\n\n` +
+      `Hi,\n\n` +
+      `${claim.player}'s family is signed up to bring snacks for the ${teamName} game on ${describeGame(game)}.\n\n` +
       `We'll send one reminder on the Monday before. If plans change, let the coach know.\n\n` +
       `Schedule: ${siteUrl}\n`,
   };
@@ -157,13 +167,13 @@ export function reminderEmail(
   return {
     subject: `${teamName}: snacks this week — ${game.date}`,
     text:
-      `Hi ${claim.parent_name},\n\n` +
-      `Quick reminder: you're bringing snacks for the ${teamName} game on ${describeGame(game)}.\n\n` +
+      `Hi,\n\n` +
+      `Quick reminder: ${claim.player}'s family is bringing snacks for the ${teamName} game on ${describeGame(game)}.\n\n` +
       `Thank you!\n\nSchedule: ${siteUrl}\n`,
   };
 }
 
-/** Thursday's note to every family. Names the snack family; never their email. */
+/** Thursday's note to every family. Names the player whose family has snacks; never an email. */
 export function teamReminderEmail(
   game: Game,
   claim: Claim | undefined,
@@ -171,7 +181,7 @@ export function teamReminderEmail(
   siteUrl: string,
 ): EmailCopy {
   const snacks = claim
-    ? `Snacks: ${claim.parent_name}.`
+    ? `Snacks: ${claim.player}'s family.`
     : `Snacks: nobody has signed up yet — grab the slot at ${siteUrl}`;
   return {
     subject: `${teamName}: game this Saturday vs ${game.opponent}`,

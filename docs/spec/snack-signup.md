@@ -5,20 +5,25 @@ _Status: built in the first app commit; not yet deployed._
 ## Who and what
 
 Parents of the team see the season's games and sign up to bring snacks for one. The coach adds and
-removes games and sees who signed up. There are no parent accounts: the site is public, and a
-sign-up asks for a name and an email address.
+removes games, keeps the team list (player name plus parent email), and sees who signed up. There
+are no parent accounts: the site is public, and a sign-up is picking the player from the team list
+and confirming. No email is typed anywhere on the public site.
 
 ## Rules
 
 - One family per game. The first sign-up wins; a second attempt is told "Someone else just signed
   up for this game" and the page refreshes to show who.
-- A sign-up needs a name (1–60 characters) and a valid email address. Both are validated on the
-  server; the browser's validation is a convenience, not the guard.
+- A sign-up names a player. The server looks the player up on the team list (case-insensitive)
+  and copies the parent email onto the claim; a name not on the list is rejected. The browser only
+  offers names from the list and asks "Sign up X's family … ?" before submitting.
+- We assume nobody signs up another family's player. The confirm step and the coach's Release
+  Slot are the guard; a per-family secret link would be the next step if that assumption fails.
 - Games already played cannot be signed up for. "Today" is decided in the team's time zone
   (`TIMEZONE`), not UTC.
-- The public page shows the parent's **name** next to the game. The **email address is never
-  rendered on the public page or returned by the public API**, and `publicGameSchema` is typed so
-  it cannot carry one. Only the coach, signed in with the `admin` role, sees emails.
+- The public page shows the **player's name** next to the game and offers the team's player names
+  in the picker. **No email address is ever rendered on the public page or returned by the public
+  API**; `publicGameSchema` and `scheduleResponseSchema` are typed so they cannot carry one. Only
+  the coach, signed in with the `admin` role, sees emails.
 - A sign-up sends one confirmation email to the parent. If that email fails, the sign-up still
   stands; the failure is logged and the response says `confirmation_sent: false`.
 - Parents cannot cancel their own sign-up (there is no account to prove it is theirs). They tell
@@ -33,25 +38,25 @@ crest is Manchester City FC's trademark and is not copied here. To use an offici
 licensed to use, replace that one file; nothing else references it by content.
 
 - `/` — the schedule. Title Case headings. Each game: date, kickoff, opponent, location,
-  and either "_Name_ is bringing snacks" or a **Sign Up** button that opens an inline form.
+  and either "Snacks: _Player_" or a **Sign Up** button that opens the picker and confirm step.
 - `/admin.html` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Add A
-  Game; the table of games with sign-ups and emails; Release Slot; Remove Game; the Team Email
-  List (see `reminder-emails.md`).
+  Game; the table of games with sign-ups and emails; Release Slot; Remove Game; the Team List
+  (player name plus parent email, pasted one per line; re-adding a player corrects the email).
 - `/login`, `/logout` — redirects to the SWA auth endpoints.
 
 ## API
 
 | Method and path | Who | Body / result |
 |---|---|---|
-| `GET /api/games` | anyone | `{ team_name, games: PublicGame[] }` |
-| `POST /api/claims` | anyone | `ClaimInput` → `201 { game: PublicGame, confirmation_sent }` |
+| `GET /api/games` | anyone | `{ team_name, games: PublicGame[], players: string[] }` |
+| `POST /api/claims` | anyone | `{ game_id, player }` → `201 { game: PublicGame, confirmation_sent }` |
 | `GET /api/admin/games` | admin | `{ games: AdminGame[] }` (emails included) |
 | `POST /api/admin/games` | admin | `NewGameInput` → `201 Game` |
 | `DELETE /api/admin/games/{id}` | admin | `204` |
 | `DELETE /api/admin/claims/{gameId}` | admin | `204` |
 | `GET /api/admin/roster` | admin | `{ members: RosterMember[] }` |
-| `POST /api/admin/roster` | admin | `{ emails: string[] }` (≤100) → `201 { members }` |
-| `DELETE /api/admin/roster/{email}` | admin | `204` |
+| `POST /api/admin/roster` | admin | `{ members: [{ player, email }] }` (≤100) → `201 { members }` |
+| `DELETE /api/admin/roster/{player}` | admin | `204` |
 
 Errors are `{ error: { code, message } }` with the codes in `packages/shared/src/errors.ts`.
 Admin routes are gated twice: SWA route rules (`staticwebapp.config.json`) and `requireAdmin` in
@@ -59,6 +64,7 @@ the API, so a misconfigured rule cannot expose emails.
 
 ## Data
 
-Three Table Storage tables. `roster`: partition `member`, row key = email (with the four characters
-Table Storage forbids in keys mapped to `_`). `games`: partition `game`, row key = game id (`YYYY-MM-DD-opponent-slug`).
-`claims`: partition `claim`, row key = game id, which is what enforces one sign-up per game.
+Three Table Storage tables. `roster`: partition `member`, row key = player name lower-cased (with
+the four characters Table Storage forbids in keys mapped to `_`), columns player, email, added_at. `games`: partition `game`, row key = game id (`YYYY-MM-DD-opponent-slug`).
+`claims`: partition `claim`, row key = game id, which is what enforces one sign-up per game;
+columns player, email (copied from the roster at sign-up), created_at, reminded_at.

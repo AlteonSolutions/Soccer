@@ -13,7 +13,8 @@ export function createMemoryRepo(
 ): DataRepo {
   const games = new Map((seed.games ?? []).map((g) => [g.id, g]));
   const claims = new Map((seed.claims ?? []).map((c) => [c.game_id, c]));
-  const roster = new Map((seed.roster ?? []).map((m) => [m.email, m]));
+  const key = (player: string) => player.trim().toLowerCase();
+  const roster = new Map((seed.roster ?? []).map((m) => [key(m.player), m]));
   return {
     async listGames() {
       return [...games.values()];
@@ -57,11 +58,14 @@ export function createMemoryRepo(
     async listRoster() {
       return [...roster.values()];
     },
-    async addRosterMembers(members) {
-      for (const member of members) if (!roster.has(member.email)) roster.set(member.email, member);
+    async getRosterMember(player) {
+      return roster.get(key(player));
     },
-    async removeRosterMember(email) {
-      roster.delete(email);
+    async addRosterMembers(members) {
+      for (const member of members) roster.set(key(member.player), member);
+    },
+    async removeRosterMember(player) {
+      roster.delete(key(player));
     },
   };
 }

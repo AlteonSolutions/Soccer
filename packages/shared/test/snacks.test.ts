@@ -9,11 +9,13 @@ import {
   selectSnackReminders,
   selectTeamReminders,
   selectUnclaimed,
+  rosterEmails,
   teamReminderEmail,
+  toPlayerNames,
   toPublicSchedule,
   weekdayOf,
 } from "../src/snacks.js";
-import { claim, game } from "./fixtures.js";
+import { claim, game, member } from "./fixtures.js";
 
 describe("toPublicSchedule", () => {
   it("shows who is bringing snacks by name and never carries the email or internal columns", () => {
@@ -21,7 +23,7 @@ describe("toPublicSchedule", () => {
       [game({ team_reminded_at: "2026-09-17T14:00:00.000Z" })],
       [claim()],
     );
-    expect(rows[0]?.snack_by).toBe("Sam Rivera");
+    expect(rows[0]?.snack_by).toBe("Leo Rivera");
     expect(JSON.stringify(rows)).not.toContain("sam@example.com");
     expect(JSON.stringify(rows)).not.toContain("team_reminded_at");
     expect(publicGameSchema.safeParse(rows[0]).success).toBe(true);
@@ -135,11 +137,24 @@ describe("gameIdFor", () => {
   });
 });
 
+describe("roster views", () => {
+  it("exposes sorted player names and nothing else, and one email per parent", () => {
+    const roster = [
+      member({ player: "Mia Chen", email: "chen@example.com" }),
+      member(),
+      member({ player: "Ana Rivera" }),
+    ];
+    expect(toPlayerNames(roster)).toEqual(["Ana Rivera", "Leo Rivera", "Mia Chen"]);
+    expect(JSON.stringify(toPlayerNames(roster))).not.toContain("@");
+    expect(rosterEmails(roster)).toEqual(["chen@example.com", "sam@example.com"]);
+  });
+});
+
 describe("emails", () => {
-  it("snack reminder names the parent, the game and the site", () => {
+  it("snack reminder names the player, the game and the site", () => {
     const copy = reminderEmail(game(), claim(), "Manchester City", "https://example.org");
     expect(copy.subject).toBe("Manchester City: snacks this week — 2026-09-19");
-    expect(copy.text).toContain("Sam Rivera");
+    expect(copy.text).toContain("Leo Rivera's family");
     expect(copy.text).toContain("Red Dragons");
     expect(copy.text).toContain("https://example.org");
   });
@@ -147,7 +162,7 @@ describe("emails", () => {
   it("team reminder names the snack family, never their email, and points at the site when open", () => {
     const withSnacks = teamReminderEmail(game(), claim(), "Manchester City", "https://example.org");
     expect(withSnacks.subject).toBe("Manchester City: game this Saturday vs Red Dragons");
-    expect(withSnacks.text).toContain("Snacks: Sam Rivera");
+    expect(withSnacks.text).toContain("Snacks: Leo Rivera's family");
     expect(withSnacks.text).not.toContain("sam@example.com");
     const open = teamReminderEmail(game(), undefined, "Manchester City", "https://example.org");
     expect(open.text).toContain("nobody has signed up yet");

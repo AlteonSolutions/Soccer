@@ -308,6 +308,7 @@ form.claim label {
   color: var(--navy);
 }
 form.claim input,
+form.claim select,
 .admin-form input {
   font: inherit;
   width: 100%;
@@ -319,10 +320,21 @@ form.claim input,
   color: var(--ink);
 }
 form.claim input:focus,
+form.claim select:focus,
 .admin-form input:focus {
   outline: none;
   border-color: var(--sky-deep);
   box-shadow: 0 0 0 3px rgba(108, 171, 221, 0.35);
+}
+form.claim .confirm {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  background: var(--paper);
+  border-left: 3px solid var(--sky-deep);
+  border-radius: 8px;
+  font-weight: 600;
+  color: var(--navy);
 }
 form.claim .privacy {
   grid-column: 1 / -1;
@@ -447,6 +459,9 @@ footer {
   gap: 1rem;
   padding: 0.55rem 0.6rem;
   border-top: 1px solid var(--line);
+}
+.roster li strong {
+  display: block;
 }
 .roster li.empty {
   color: var(--muted);

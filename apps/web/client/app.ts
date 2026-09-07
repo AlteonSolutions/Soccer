@@ -20,31 +20,66 @@ function todayIso(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 }
 
+let players: string[] = [];
+
+/**
+ * Two steps: pick the player from the team list, then confirm. No email is asked for — the
+ * confirmation goes to the address the coach has on file for that player.
+ */
 function claimForm(game: PublicGame, onDone: () => void): HTMLFormElement {
   const form = document.createElement("form");
   form.className = "claim";
   form.innerHTML = `
-    <label>Your Name <input name="parent_name" required maxlength="60" autocomplete="name" /></label>
-    <label>Email <input name="email" type="email" required maxlength="254" autocomplete="email" /></label>
-    <p class="privacy">Your email is only used for a confirmation and one reminder. It is never shown on this page.</p>
+    <label>Which Player?
+      <select name="player" required>
+        <option value="" selected disabled>Choose a player…</option>
+      </select>
+    </label>
+    <p class="privacy">The confirmation and the Monday reminder go to the email the coach has on file for this player. Nothing is shown here.</p>
+    <p class="confirm" hidden></p>
     <div class="actions">
-      <button type="submit" class="primary">Sign Me Up</button>
+      <button type="submit" class="primary" data-next>Continue</button>
       <button type="button" class="secondary" data-cancel>Cancel</button>
     </div>`;
-  form.querySelector("[data-cancel]")?.addEventListener("click", () => form.remove());
+  const select = form.querySelector("select") as HTMLSelectElement;
+  for (const name of players) {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    select.append(option);
+  }
+  const confirm = form.querySelector(".confirm") as HTMLParagraphElement;
+  const next = form.querySelector("[data-next]") as HTMLButtonElement;
+  const cancel = form.querySelector("[data-cancel]") as HTMLButtonElement;
+  let confirming = false;
+
+  cancel.addEventListener("click", () => {
+    if (!confirming) return form.remove();
+    confirming = false;
+    confirm.hidden = true;
+    select.disabled = false;
+    next.textContent = "Continue";
+    cancel.textContent = "Cancel";
+  });
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const data = new FormData(form);
-    const submit = form.querySelector("button[type=submit]") as HTMLButtonElement;
-    submit.disabled = true;
+    const player = select.value;
+    if (!player) return;
+    if (!confirming) {
+      confirming = true;
+      select.disabled = true;
+      confirm.textContent = `Sign up ${player}'s family to bring snacks on ${formatDate(game.date)} vs ${game.opponent}?`;
+      confirm.hidden = false;
+      next.textContent = "Yes, Sign Us Up";
+      cancel.textContent = "Back";
+      return;
+    }
+    next.disabled = true;
     try {
-      await request("POST", "/api/claims", {
-        game_id: game.id,
-        parent_name: String(data.get("parent_name") ?? ""),
-        email: String(data.get("email") ?? ""),
-      });
+      await request("POST", "/api/claims", { game_id: game.id, player });
       setStatus(
-        `You're signed up for ${formatDate(game.date)}. Check your email for a confirmation.`,
+        `${player}'s family is signed up for ${formatDate(game.date)}. A confirmation is on its way.`,
       );
       onDone();
     } catch (error) {
@@ -52,7 +87,7 @@ function claimForm(game: PublicGame, onDone: () => void): HTMLFormElement {
         error instanceof RequestError ? error.message : "Something went wrong. Please try again.",
         true,
       );
-      submit.disabled = false;
+      next.disabled = false;
       if (error instanceof RequestError && error.code === "ALREADY_CLAIMED") onDone();
     }
   });
@@ -104,9 +139,12 @@ async function load(): Promise<void> {
   try {
     const schedule = await request<ScheduleResponse>("GET", "/api/games");
     heading.textContent = schedule.team_name;
+    players = schedule.players;
     document.title = `${schedule.team_name} Snack Schedule`;
     list.replaceChildren(...schedule.games.map((g) => renderGame(g, todayIso())));
     if (schedule.games.length === 0) setStatus("No games on the schedule yet.");
+    else if (players.length === 0)
+      setStatus("The coach has not added the team list yet, so sign-ups are not open.");
     else if (status.className === "status" && status.textContent?.startsWith("Loading"))
       setStatus("");
   } catch (error) {

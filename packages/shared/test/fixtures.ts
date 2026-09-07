@@ -1,4 +1,4 @@
-import type { Claim, Game } from "../src/schemas.js";
+import type { Claim, Game, RosterMember } from "../src/schemas.js";
 
 export function game(overrides: Partial<Game> = {}): Game {
   return {
@@ -15,10 +15,19 @@ export function game(overrides: Partial<Game> = {}): Game {
 export function claim(overrides: Partial<Claim> = {}): Claim {
   return {
     game_id: "2026-09-19-red-dragons",
-    parent_name: "Sam Rivera",
+    player: "Leo Rivera",
     email: "sam@example.com",
     created_at: "2026-09-10T12:00:00.000Z",
     reminded_at: null,
+    ...overrides,
+  };
+}
+
+export function member(overrides: Partial<RosterMember> = {}): RosterMember {
+  return {
+    player: "Leo Rivera",
+    email: "sam@example.com",
+    added_at: "2026-08-20T00:00:00.000Z",
     ...overrides,
   };
 }

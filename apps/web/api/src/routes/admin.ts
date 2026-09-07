@@ -82,18 +82,18 @@ app.http("admin-roster", {
 });
 
 app.http("admin-roster-member", {
-  route: "admin/roster/{email}",
+  route: "admin/roster/{player}",
   methods: ["DELETE"],
   authLevel: "anonymous",
   handler: async (request: HttpRequest, context: InvocationContext) => {
     try {
       requireAdmin(request.headers.get(PRINCIPAL_HEADER));
-      const email = parseParam(
-        decodeURIComponent(request.params.email ?? ""),
-        z.email().toLowerCase(),
-        "email",
+      const player = parseParam(
+        decodeURIComponent(request.params.player ?? ""),
+        z.string().trim().min(1).max(60),
+        "player",
       );
-      await withData((repo) => removeRosterMember(repo, email));
+      await withData((repo) => removeRosterMember(repo, player));
       return json(204, undefined);
     } catch (error) {
       return toErrorResponse(error, context);

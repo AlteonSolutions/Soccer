@@ -36,20 +36,19 @@ export async function releaseClaim(repo: DataRepo, gameId: string): Promise<void
 }
 
 export async function listRoster(repo: DataRepo): Promise<RosterMember[]> {
-  return (await repo.listRoster()).sort((a, b) => a.email.localeCompare(b.email));
+  return (await repo.listRoster()).sort((a, b) => a.player.localeCompare(b.player));
 }
 
-/** Adds the pasted list; duplicates within the paste and against the roster are harmless. */
+/** Adds or corrects the pasted players; the last line wins when a player appears twice. */
 export async function addRosterMembers(
   repo: DataRepo,
   input: RosterInput,
   now: Date,
 ): Promise<RosterMember[]> {
-  const unique = [...new Set(input.emails)];
-  await repo.addRosterMembers(unique.map((email) => ({ email, added_at: now.toISOString() })));
+  await repo.addRosterMembers(input.members.map((m) => ({ ...m, added_at: now.toISOString() })));
   return listRoster(repo);
 }
 
-export async function removeRosterMember(repo: DataRepo, email: string): Promise<void> {
-  await repo.removeRosterMember(email);
+export async function removeRosterMember(repo: DataRepo, player: string): Promise<void> {
+  await repo.removeRosterMember(player);
 }

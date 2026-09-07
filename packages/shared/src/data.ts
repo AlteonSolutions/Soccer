@@ -9,9 +9,10 @@
  * Layout — three tables in one storage account:
  *   games   partitionKey "game"   rowKey <game id>        columns = Game fields
  *   claims  partitionKey "claim"  rowKey <game id>        columns = Claim fields
- *   roster  partitionKey "member" rowKey <email, keyed>   columns = RosterMember fields
+ *   roster  partitionKey "member" rowKey <player, keyed>  columns = RosterMember fields
  * One claim per game is enforced by the row key: a second createEntity on the same key is a 409.
- * One roster row per email the same way; adding an existing email is an upsert, not an error.
+ * One roster row per player (case-insensitive); re-adding a player replaces the row, which is how
+ * the coach corrects an email.
  */
 import { RestError, TableClient } from "@azure/data-tables";
 import { loadConfig } from "./config.js";
@@ -38,18 +39,23 @@ export interface DataRepo {
   markReminded(gameId: string, at: string): Promise<void>;
   markTeamReminded(gameId: string, at: string): Promise<void>;
   listRoster(): Promise<RosterMember[]>;
-  /** Idempotent: an email already on the roster keeps its original added_at. */
+  /** Case-insensitive on the player's name. */
+  getRosterMember(player: string): Promise<RosterMember | undefined>;
+  /** Upsert by player: re-adding a player replaces their row (the coach correcting an email). */
   addRosterMembers(members: RosterMember[]): Promise<void>;
-  removeRosterMember(email: string): Promise<void>;
+  removeRosterMember(player: string): Promise<void>;
 }
 
 const GAME_PK = "game";
 const CLAIM_PK = "claim";
 const ROSTER_PK = "member";
 
-/** Table row keys may not contain / \ # ? — all legal in an email's local part, so map them. */
-function rosterKey(email: string): string {
-  return email.replace(/[/\\#?]/g, "_");
+/** Row key for a player: case-insensitive, with the four characters Table Storage forbids mapped. */
+function rosterKey(player: string): string {
+  return player
+    .trim()
+    .toLowerCase()
+    .replace(/[/\\#?]/g, "_");
 }
 
 let clients: { games: TableClient; claims: TableClient; roster: TableClient } | undefined;
@@ -208,25 +214,28 @@ const tableRepo: DataRepo = {
     for await (const entity of roster.listEntities()) out.push(toRosterMember(entity));
     return out;
   },
+  async getRosterMember(player) {
+    const { roster } = await getClients();
+    try {
+      return toRosterMember(await roster.getEntity(ROSTER_PK, rosterKey(player)));
+    } catch (error) {
+      if (isNotFound(error)) return undefined;
+      throw error;
+    }
+  },
   async addRosterMembers(members) {
     const { roster } = await getClients();
     for (const member of members) {
-      try {
-        await roster.createEntity({
-          partitionKey: ROSTER_PK,
-          rowKey: rosterKey(member.email),
-          ...member,
-        });
-      } catch (error) {
-        // Already on the list: keep the original row (and its added_at).
-        if (!(error instanceof RestError && error.statusCode === 409)) throw error;
-      }
+      await roster.upsertEntity(
+        { partitionKey: ROSTER_PK, rowKey: rosterKey(member.player), ...member },
+        "Replace",
+      );
     }
   },
-  async removeRosterMember(email) {
+  async removeRosterMember(player) {
     const { roster } = await getClients();
     try {
-      await roster.deleteEntity(ROSTER_PK, rosterKey(email));
+      await roster.deleteEntity(ROSTER_PK, rosterKey(player));
     } catch (error) {
       if (!isNotFound(error)) throw error;
     }

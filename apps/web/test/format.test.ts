@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dateParts, describeSnack, formatDate, formatKickoff } from "../client/lib/format.js";
+import { parseRosterLines } from "../client/lib/roster.js";
 
 describe("format", () => {
   it("shows the calendar date as written, not shifted by the time zone", () => {
@@ -22,5 +23,16 @@ describe("format", () => {
   it("describes the snack slot by name only", () => {
     expect(describeSnack({ snack_by: "The Nguyens" })).toBe("Snacks: The Nguyens");
     expect(describeSnack({ snack_by: null })).toBe("Snacks: nobody yet");
+  });
+
+  it("parses 'Player Name, email' lines, splitting on the last comma, skipping junk", () => {
+    expect(
+      parseRosterLines(
+        "Leo Rivera, rivera@example.com\nRivera, Ana , ana@example.com\n\nno comma here\n, \n",
+      ),
+    ).toEqual([
+      { player: "Leo Rivera", email: "rivera@example.com" },
+      { player: "Rivera, Ana", email: "ana@example.com" },
+    ]);
   });
 });

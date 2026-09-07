@@ -10,19 +10,21 @@ the team's time zone (`TIMEZONE`):
 
 | Day | Email | To | Once per |
 |---|---|---|---|
-| Any | **Confirmation** — right after a sign-up. Sent by the web API. | the parent who signed up | sign-up |
-| Monday | **Snack reminder** — "you're on snacks this week". | the family signed up for a game Mon–Sun | claim (`reminded_at`) |
+| Any | **Confirmation** — right after a sign-up. Sent by the web API. | the email on the team list for the chosen player | sign-up |
+| Monday | **Snack reminder** — "X's family is on snacks this week". | the family signed up for a game Mon–Sun | claim (`reminded_at`) |
 | Monday | **Coach nudge** — a game this week has nobody. Only when `COACH_EMAIL` is set. | the coach | run |
-| Thursday | **Team reminder** — "game this Saturday vs …", with who has snacks (name only). | every address on the team email list, one email each | game (`team_reminded_at`) |
+| Thursday | **Team reminder** — "game this Saturday vs …", naming the player whose family has snacks. | every distinct parent email on the team list, plus the snack family's if it is no longer there; one email each | game (`team_reminded_at`) |
 
 Every email is plain text, from `EMAIL_FROM` on the verified domain, with the site URL at the end.
 
-## The team email list
+## The team list
 
-The coach keeps it on the admin page ("Team Email List"): paste addresses, remove one. Stored in
-the `roster` table, one row per email, never shown outside the admin page. Thursday's email goes to
-each address separately, so no family sees another's address. An empty list means Thursday's
-email goes to nobody; the admin page says so.
+The coach keeps it on the admin page ("Team List"): one line per player, `Player Name,
+parent@example.com`; re-adding a player corrects the email; Remove takes a player off. Stored in the
+`roster` table, one row per player, never shown outside the admin page. It is also what the public
+sign-up picker offers (names only), so an empty list means nobody can sign up and Thursday's
+email goes to nobody; the admin page says so. Two players with the same parent email produce one
+Thursday email, not two.
 
 ## Rules
 

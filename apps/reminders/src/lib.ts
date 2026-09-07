@@ -4,12 +4,14 @@
  * calls for:
  *   Monday   — the family on snacks for this week's game gets a reminder; the coach gets a nudge
  *              if a game this week has nobody (only when COACH_EMAIL is set).
- *   Thursday — every family on the roster gets a reminder about Saturday's game.
+ *   Thursday — every family on the team list gets a reminder about Saturday's game; the family on
+ *              snacks is included even if their player has since left the list.
  * Rules it exists to enforce: each email goes out at most once per game (`reminded_at`,
  * `team_reminded_at`), and one failed send never stops the rest of the run.
  */
 import {
   reminderEmail,
+  rosterEmails,
   selectSnackReminders,
   selectTeamReminders,
   selectUnclaimed,
@@ -100,11 +102,13 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
     ]);
     const claimByGame = new Map(claims.map((c) => [c.game_id, c]));
     for (const game of selectTeamReminders(games, ctx.today)) {
-      const copy = teamReminderEmail(game, claimByGame.get(game.id), ctx.teamName, ctx.siteUrl);
-      // One email per family: nobody sees anyone else's address.
-      for (const member of roster) {
+      const claim = claimByGame.get(game.id);
+      const copy = teamReminderEmail(game, claim, ctx.teamName, ctx.siteUrl);
+      // One email per address, nobody sees anyone else's; the snack family is always on the list.
+      const recipients = [...new Set([...rosterEmails(roster), ...(claim ? [claim.email] : [])])];
+      for (const to of recipients) {
         try {
-          await ctx.sendEmail({ to: member.email, ...copy });
+          await ctx.sendEmail({ to, ...copy });
           summary.team_reminders_sent += 1;
         } catch (error) {
           summary.team_reminders_failed += 1;

@@ -27,6 +27,11 @@ sign-up asks for a name and an email address.
 
 ## Screens
 
+Team colors (sky blue, navy, white) are the five variables at the top of `apps/web/client/styles.css`.
+The header badge is `apps/web/client/logo.svg`, an original design in those colors: the club's real
+crest is Manchester City FC's trademark and is not copied here. To use an official logo you are
+licensed to use, replace that one file; nothing else references it by content.
+
 - `/` — the schedule. Title Case headings. Each game: date, kickoff, opponent, location, notes,
   and either "_Name_ is bringing snacks" or a **Sign Up** button that opens an inline form.
 - `/admin.html` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Add A

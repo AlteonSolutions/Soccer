@@ -2,7 +2,7 @@
 using './main.bicep'
 
 param namePrefix = 'soccer'
-param teamName = 'Our Team'
+param teamName = 'Manchester City'
 param timeZone = 'America/New_York'
 param reminderDaysAhead = 2
 param coachEmail = ''

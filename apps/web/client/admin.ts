@@ -25,9 +25,13 @@ function cell(text: string): HTMLTableCellElement {
   return td;
 }
 
-function actionButton(label: string, onClick: () => Promise<void>): HTMLButtonElement {
+function actionButton(
+  label: string,
+  className: string,
+  onClick: () => Promise<void>,
+): HTMLButtonElement {
   const button = document.createElement("button");
-  button.className = "secondary";
+  button.className = className;
   button.textContent = label;
   button.addEventListener("click", async () => {
     button.disabled = true;
@@ -44,22 +48,27 @@ function actionButton(label: string, onClick: () => Promise<void>): HTMLButtonEl
 
 function renderRow(game: AdminGame): HTMLTableRowElement {
   const tr = document.createElement("tr");
-  tr.append(
-    cell(
-      `${formatDate(game.date)} · ${formatKickoff(game.kickoff)} vs ${game.opponent} — ${game.location}`,
-    ),
-    cell(game.claim ? game.claim.parent_name : "—"),
-    cell(game.claim ? game.claim.email : "—"),
+  const when = cell(
+    `${formatDate(game.date)} · ${formatKickoff(game.kickoff)} vs ${game.opponent}`,
   );
+  const sub = document.createElement("span");
+  sub.className = "sub";
+  sub.textContent = game.notes ? `${game.location} — ${game.notes}` : game.location;
+  when.append(sub);
+  const email = cell(game.claim ? game.claim.email : "—");
+  email.className = "mono";
+  tr.append(when, cell(game.claim ? game.claim.parent_name : "—"), email);
   const actions = document.createElement("td");
+  actions.className = "actions";
   if (game.claim) {
     actions.append(
-      actionButton("Release Slot", () => request("DELETE", `/api/admin/claims/${game.id}`)),
+      actionButton("Release Slot", "secondary", () =>
+        request("DELETE", `/api/admin/claims/${game.id}`),
+      ),
     );
-    actions.append(" ");
   }
   actions.append(
-    actionButton("Remove Game", async () => {
+    actionButton("Remove Game", "danger", async () => {
       if (!window.confirm(`Remove the game vs ${game.opponent} on ${formatDate(game.date)}?`))
         return;
       await request("DELETE", `/api/admin/games/${game.id}`);

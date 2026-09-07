@@ -3,40 +3,51 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#6cabdd" />
     <title>Coach Admin</title>
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header>
-      <h1>Coach Admin</h1>
-      <p>
-        <a href="/" style="color: inherit">Public Schedule</a> ·
-        <a href="/logout" style="color: inherit">Sign Out</a>
-      </p>
+    <header class="hero">
+      <div class="wrap">
+        <img class="badge" src="/logo.svg" alt="" width="84" height="84" />
+        <div>
+          <p class="eyebrow">Coach Admin</p>
+          <h1>Games And Sign-Ups</h1>
+          <nav><a href="/">Public Schedule</a><a href="/logout">Sign Out</a></nav>
+        </div>
+      </div>
     </header>
     <main>
-      <h2>Add A Game</h2>
-      <form id="add-game" class="admin-form">
-        <label>Date <input name="date" type="date" required /></label>
-        <label>Kickoff <input name="kickoff" type="time" required /></label>
-        <label>Opponent <input name="opponent" required maxlength="80" /></label>
-        <label>Location <input name="location" required maxlength="120" /></label>
-        <label>Notes <input name="notes" maxlength="300" placeholder="Optional" /></label>
-        <button type="submit">Add Game</button>
-      </form>
       <p id="status" class="status">Loading…</p>
-      <h2>Games And Sign-Ups</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Game</th>
-            <th>Snacks</th>
-            <th>Email</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="rows"></tbody>
-      </table>
+      <section class="card">
+        <h2>Add A Game</h2>
+        <form id="add-game" class="admin-form">
+          <label>Date <input name="date" type="date" required /></label>
+          <label>Kickoff <input name="kickoff" type="time" required /></label>
+          <label>Opponent <input name="opponent" required maxlength="80" /></label>
+          <label>Location <input name="location" required maxlength="120" /></label>
+          <label>Notes <input name="notes" maxlength="300" placeholder="Optional" /></label>
+          <button type="submit" class="primary">Add Game</button>
+        </form>
+      </section>
+      <section class="card">
+        <h2>Schedule</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Game</th>
+                <th>Snacks</th>
+                <th>Email</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
     <script type="module" src="/admin.js"></script>
   </body>

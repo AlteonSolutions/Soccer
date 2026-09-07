@@ -4,13 +4,24 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Coach Sign-In Required</title>
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header><h1>Coach Sign-In Required</h1></header>
+    <header class="hero">
+      <div class="wrap">
+        <img class="badge" src="/logo.svg" alt="" width="84" height="84" />
+        <div>
+          <p class="eyebrow">Coach Admin</p>
+          <h1>Coach Sign-In Required</h1>
+          <nav><a href="/">Public Schedule</a><a href="/logout">Sign Out</a></nav>
+        </div>
+      </div>
+    </header>
     <main>
-      <p>This page is for the coach. You are signed in, but not as the coach.</p>
-      <p><a href="/">Back To The Schedule</a> · <a href="/logout">Sign Out</a></p>
+      <p class="status">
+        You are signed in, but not as the coach. This page is for the coach only.
+      </p>
     </main>
   </body>
 </html>

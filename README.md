@@ -20,6 +20,7 @@ Fresh-clone details: `SETUP.md`. Deploying: `docs/runbooks/first-deploy.md`.
 ```
 apps/web/               one Azure Static Web App
   client/               the public page and the coach's admin page: HTML, CSS, TypeScript, no framework
+  client/logo.svg       the header badge — swap this one file for a logo you are licensed to use
   api/src/routes/       thin HTTP entry points (Azure Functions v4); every route is imported in index.ts
   api/src/lib/          the logic behind them, framework-free, tested directly
   build.mjs             esbuild → dist/client (app_location) and dist/api (api_location)

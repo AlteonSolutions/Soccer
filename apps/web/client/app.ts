@@ -4,7 +4,7 @@
  */
 import type { PublicGame, ScheduleResponse } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
-import { describeSnack, formatDate, formatKickoff } from "./lib/format.js";
+import { dateParts, describeSnack, formatDate, formatKickoff } from "./lib/format.js";
 
 const status = document.getElementById("status") as HTMLParagraphElement;
 const list = document.getElementById("games") as HTMLUListElement;
@@ -28,7 +28,7 @@ function claimForm(game: PublicGame, onDone: () => void): HTMLFormElement {
     <label>Email <input name="email" type="email" required maxlength="254" autocomplete="email" /></label>
     <p class="privacy">Your email is only used for a confirmation and one reminder. It is never shown on this page.</p>
     <div class="actions">
-      <button type="submit">Sign Me Up</button>
+      <button type="submit" class="primary">Sign Me Up</button>
       <button type="button" class="secondary" data-cancel>Cancel</button>
     </div>`;
   form.querySelector("[data-cancel]")?.addEventListener("click", () => form.remove());
@@ -63,30 +63,35 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
   const item = document.createElement("li");
   const past = game.date < today;
   item.className = past ? "game past" : "game";
+  const parts = dateParts(game.date);
   item.innerHTML = `
+    <div class="date-tile" aria-hidden="true">
+      <span class="month"></span><span class="day"></span><span class="weekday"></span>
+    </div>
     <div>
       <h2></h2>
-      <p class="where"></p>
+      <p class="meta"><span class="kickoff"></span><span class="where"></span></p>
       ${game.notes ? '<p class="notes"></p>' : ""}
     </div>
     <div class="snack"></div>`;
-  (item.querySelector("h2") as HTMLElement).textContent =
-    `${formatDate(game.date)} · ${formatKickoff(game.kickoff)} vs ${game.opponent}`;
+  (item.querySelector(".month") as HTMLElement).textContent = parts.month;
+  (item.querySelector(".day") as HTMLElement).textContent = parts.day;
+  (item.querySelector(".weekday") as HTMLElement).textContent = parts.weekday;
+  (item.querySelector("h2") as HTMLElement).textContent = `vs ${game.opponent}`;
+  (item.querySelector(".kickoff") as HTMLElement).textContent =
+    `${formatDate(game.date)} · ${formatKickoff(game.kickoff)}`;
   (item.querySelector(".where") as HTMLElement).textContent = game.location;
   if (game.notes) (item.querySelector(".notes") as HTMLElement).textContent = game.notes;
 
   const snack = item.querySelector(".snack") as HTMLElement;
   if (game.snack_by || past) {
-    const line = document.createElement("span");
-    line.className = game.snack_by ? "taken" : "";
-    line.textContent = past
-      ? game.snack_by
-        ? describeSnack(game)
-        : "Played"
-      : describeSnack(game);
-    snack.append(line);
+    const pill = document.createElement("span");
+    pill.className = game.snack_by ? "pill taken" : "pill played";
+    pill.textContent = game.snack_by ? describeSnack(game) : "Played";
+    snack.append(pill);
   } else {
     const button = document.createElement("button");
+    button.className = "primary";
     button.textContent = "Sign Up";
     button.addEventListener("click", () => {
       item.querySelector("form.claim")?.remove();
@@ -100,7 +105,7 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
 async function load(): Promise<void> {
   try {
     const schedule = await request<ScheduleResponse>("GET", "/api/games");
-    heading.textContent = `${schedule.team_name} Snack Schedule`;
+    heading.textContent = schedule.team_name;
     document.title = `${schedule.team_name} Snack Schedule`;
     list.replaceChildren(...schedule.games.map((g) => renderGame(g, todayIso())));
     if (schedule.games.length === 0) setStatus("No games on the schedule yet.");

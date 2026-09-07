@@ -16,6 +16,17 @@ export function formatDate(dateIso: string): string {
   });
 }
 
+/** The pieces of a calendar tile: "SEP", "19", "Sat" — from "2026-09-19", no time-zone shift. */
+export function dateParts(dateIso: string): { month: string; day: string; weekday: string } {
+  const [y, m, d] = dateIso.split("-").map(Number) as [number, number, number];
+  const date = new Date(y, m - 1, d);
+  return {
+    month: date.toLocaleDateString("en-US", { month: "short" }).toUpperCase(),
+    day: String(d),
+    weekday: date.toLocaleDateString("en-US", { weekday: "short" }),
+  };
+}
+
 /** "10:00 AM" from "10:00". */
 export function formatKickoff(kickoff: string): string {
   const [h, min] = kickoff.split(":").map(Number) as [number, number];

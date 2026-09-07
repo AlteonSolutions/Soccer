@@ -3,18 +3,29 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#6cabdd" />
     <title>Snack Schedule</title>
+    <link rel="icon" href="/logo.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
-    <header>
-      <h1 id="team-name">Snack Schedule</h1>
-      <p>Sign up to bring snacks for a game. One family per game.</p>
+    <header class="hero">
+      <div class="wrap">
+        <img class="badge" src="/logo.svg" alt="" width="84" height="84" />
+        <div>
+          <p class="eyebrow">Snack Schedule</p>
+          <h1 id="team-name">Loading…</h1>
+          <p>Pick a game and bring the snacks. One family per game.</p>
+        </div>
+      </div>
     </header>
     <main>
       <p id="status" class="status">Loading the schedule…</p>
       <ul id="games" class="games"></ul>
     </main>
+    <footer>
+      Your email is only used for a confirmation and one reminder. It is never shown on this site.
+    </footer>
     <script type="module" src="/app.js"></script>
   </body>
 </html>

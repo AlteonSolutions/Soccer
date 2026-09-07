@@ -35,6 +35,7 @@ for (const file of [
   "admin.html",
   "forbidden.html",
   "styles.css",
+  "logo.svg",
   "staticwebapp.config.json",
 ]) {
   cpSync(join(root, "client", file), join(dist, "client", file));

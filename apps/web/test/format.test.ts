@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { describeSnack, formatDate, formatKickoff } from "../client/lib/format.js";
+import { dateParts, describeSnack, formatDate, formatKickoff } from "../client/lib/format.js";
 
 describe("format", () => {
   it("shows the calendar date as written, not shifted by the time zone", () => {
     expect(formatDate("2026-09-19")).toBe("Sat, Sep 19");
     expect(formatDate("2026-01-01")).toBe("Thu, Jan 1");
+  });
+
+  it("splits a date into tile parts without a time-zone shift", () => {
+    expect(dateParts("2026-09-19")).toEqual({ month: "SEP", day: "19", weekday: "Sat" });
+    expect(dateParts("2026-01-01")).toEqual({ month: "JAN", day: "1", weekday: "Thu" });
   });
 
   it("renders 24-hour kickoffs as 12-hour", () => {

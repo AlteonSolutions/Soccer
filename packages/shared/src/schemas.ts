@@ -21,13 +21,14 @@ export const gameSchema = z
     kickoff: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Expected HH:MM (24-hour)"),
     opponent: z.string().trim().min(1).max(80),
     location: z.string().trim().min(1).max(120),
-    notes: z.string().trim().max(300).default(""),
+    // Table Storage cannot store null: a game not yet announced has no column, so absent = null.
+    team_reminded_at: z.iso.datetime().nullable().default(null),
   })
   .strict();
 export type Game = z.infer<typeof gameSchema>;
 
 /** What the coach submits to add a game; the id is derived from date and opponent. */
-export const newGameInputSchema = gameSchema.omit({ id: true });
+export const newGameInputSchema = gameSchema.omit({ id: true, team_reminded_at: true });
 export type NewGameInput = z.infer<typeof newGameInputSchema>;
 
 /** What a parent submits to claim a game's snack slot. */
@@ -52,7 +53,10 @@ export const claimSchema = claimInputSchema
 export type Claim = z.infer<typeof claimSchema>;
 
 /** A game as the public site sees it: who is bringing snacks, by name, never by email. */
-export const publicGameSchema = gameSchema.extend({ snack_by: parentName.nullable() }).strict();
+export const publicGameSchema = gameSchema
+  .omit({ team_reminded_at: true })
+  .extend({ snack_by: parentName.nullable() })
+  .strict();
 export type PublicGame = z.infer<typeof publicGameSchema>;
 
 export const scheduleResponseSchema = z
@@ -63,6 +67,21 @@ export type ScheduleResponse = z.infer<typeof scheduleResponseSchema>;
 /** The coach's view: games joined with full claims, emails included. */
 export const adminGameSchema = gameSchema.extend({ claim: claimSchema.nullable() }).strict();
 export type AdminGame = z.infer<typeof adminGameSchema>;
+
+/** A family on the team's email list. Coach-managed; never shown outside the admin page. */
+export const rosterMemberSchema = z
+  .object({
+    email: z.email().trim().toLowerCase().max(254),
+    added_at: z.iso.datetime(),
+  })
+  .strict();
+export type RosterMember = z.infer<typeof rosterMemberSchema>;
+
+/** Bulk add: the coach pastes the team list. 100 is far above any youth team's family count. */
+export const rosterInputSchema = z
+  .object({ emails: z.array(z.email().trim().toLowerCase().max(254)).min(1).max(100) })
+  .strict();
+export type RosterInput = z.infer<typeof rosterInputSchema>;
 
 /** Every error the API returns has this shape; the client renders `message`, logs `code`. */
 export const apiErrorSchema = z

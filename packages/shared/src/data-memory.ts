@@ -6,11 +6,14 @@
  */
 import { AppError } from "./errors.js";
 import type { DataRepo } from "./data.js";
-import type { Claim, Game } from "./schemas.js";
+import type { Claim, Game, RosterMember } from "./schemas.js";
 
-export function createMemoryRepo(seed: { games?: Game[]; claims?: Claim[] } = {}): DataRepo {
+export function createMemoryRepo(
+  seed: { games?: Game[]; claims?: Claim[]; roster?: RosterMember[] } = {},
+): DataRepo {
   const games = new Map((seed.games ?? []).map((g) => [g.id, g]));
   const claims = new Map((seed.claims ?? []).map((c) => [c.game_id, c]));
+  const roster = new Map((seed.roster ?? []).map((m) => [m.email, m]));
   return {
     async listGames() {
       return [...games.values()];
@@ -46,6 +49,19 @@ export function createMemoryRepo(seed: { games?: Game[]; claims?: Claim[] } = {}
     async markReminded(gameId, at) {
       const existing = claims.get(gameId);
       if (existing) claims.set(gameId, { ...existing, reminded_at: at });
+    },
+    async markTeamReminded(gameId, at) {
+      const existing = games.get(gameId);
+      if (existing) games.set(gameId, { ...existing, team_reminded_at: at });
+    },
+    async listRoster() {
+      return [...roster.values()];
+    },
+    async addRosterMembers(members) {
+      for (const member of members) if (!roster.has(member.email)) roster.set(member.email, member);
+    },
+    async removeRosterMember(email) {
+      roster.delete(email);
     },
   };
 }

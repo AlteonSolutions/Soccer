@@ -33,9 +33,6 @@ param teamName string = 'Our Team'
 @description('IANA time zone used to decide what "today" is for reminders.')
 param timeZone string = 'America/New_York'
 
-@description('Days before a game to send the reminder.')
-param reminderDaysAhead int = 2
-
 @description('Where "nobody signed up" nudges go. Empty disables the nudge.')
 param coachEmail string = ''
 
@@ -132,7 +129,6 @@ var appConfig = {
   EMAIL_FROM: emailFrom
   EMAIL_LIVE: emailLive
   COACH_EMAIL: coachEmail
-  REMINDER_DAYS_AHEAD: string(reminderDaysAhead)
   TIMEZONE: timeZone
   TEAM_NAME: teamName
   SITE_URL: siteUrl

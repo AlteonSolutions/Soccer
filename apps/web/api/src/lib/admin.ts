@@ -9,6 +9,8 @@ import {
   type DataRepo,
   type Game,
   type NewGameInput,
+  type RosterInput,
+  type RosterMember,
 } from "@soccer/shared";
 
 export async function listAdminGames(repo: DataRepo): Promise<AdminGame[]> {
@@ -18,7 +20,7 @@ export async function listAdminGames(repo: DataRepo): Promise<AdminGame[]> {
 }
 
 export async function addGame(repo: DataRepo, input: NewGameInput): Promise<Game> {
-  const game: Game = { id: gameIdFor(input), ...input };
+  const game: Game = { id: gameIdFor(input), ...input, team_reminded_at: null };
   await repo.putGame(game);
   return game;
 }
@@ -31,4 +33,23 @@ export async function removeGame(repo: DataRepo, id: string): Promise<void> {
 
 export async function releaseClaim(repo: DataRepo, gameId: string): Promise<void> {
   await repo.deleteClaim(gameId);
+}
+
+export async function listRoster(repo: DataRepo): Promise<RosterMember[]> {
+  return (await repo.listRoster()).sort((a, b) => a.email.localeCompare(b.email));
+}
+
+/** Adds the pasted list; duplicates within the paste and against the roster are harmless. */
+export async function addRosterMembers(
+  repo: DataRepo,
+  input: RosterInput,
+  now: Date,
+): Promise<RosterMember[]> {
+  const unique = [...new Set(input.emails)];
+  await repo.addRosterMembers(unique.map((email) => ({ email, added_at: now.toISOString() })));
+  return listRoster(repo);
+}
+
+export async function removeRosterMember(repo: DataRepo, email: string): Promise<void> {
+  await repo.removeRosterMember(email);
 }

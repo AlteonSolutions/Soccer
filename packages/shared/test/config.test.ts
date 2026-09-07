@@ -7,18 +7,17 @@ describe("loadConfig", () => {
     const config = loadConfig({});
     expect(config.STORAGE_CONNECTION_STRING).toBe("UseDevelopmentStorage=true");
     expect(config.EMAIL_LIVE).toBe("off");
-    expect(config.REMINDER_DAYS_AHEAD).toBe(2);
     expect(config.TIMEZONE).toBe("America/New_York");
   });
 
   it("treats an empty value as unset rather than as the empty string", () => {
-    expect(loadConfig({ REMINDER_DAYS_AHEAD: "" }).REMINDER_DAYS_AHEAD).toBe(2);
+    expect(loadConfig({ TIMEZONE: "" }).TIMEZONE).toBe("America/New_York");
   });
 
   it("rejects a malformed value by variable name", () => {
-    expect(() => loadConfig({ REMINDER_DAYS_AHEAD: "30" })).toThrow(ConfigError);
-    expect(() => loadConfig({ REMINDER_DAYS_AHEAD: "30" })).toThrow(/REMINDER_DAYS_AHEAD/);
+    expect(() => loadConfig({ COACH_EMAIL: "not-an-address" })).toThrow(ConfigError);
     expect(() => loadConfig({ COACH_EMAIL: "not-an-address" })).toThrow(/COACH_EMAIL/);
+    expect(() => loadConfig({ SITE_URL: "not a url" })).toThrow(/SITE_URL/);
   });
 
   it("refuses EMAIL_LIVE=on without the ACS connection string and sender", () => {

@@ -32,10 +32,11 @@ The header badge is `apps/web/client/logo.svg`, an original design in those colo
 crest is Manchester City FC's trademark and is not copied here. To use an official logo you are
 licensed to use, replace that one file; nothing else references it by content.
 
-- `/` — the schedule. Title Case headings. Each game: date, kickoff, opponent, location, notes,
+- `/` — the schedule. Title Case headings. Each game: date, kickoff, opponent, location,
   and either "_Name_ is bringing snacks" or a **Sign Up** button that opens an inline form.
 - `/admin.html` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Add A
-  Game; the table of games with sign-ups and emails; Release Slot; Remove Game.
+  Game; the table of games with sign-ups and emails; Release Slot; Remove Game; the Team Email
+  List (see `reminder-emails.md`).
 - `/login`, `/logout` — redirects to the SWA auth endpoints.
 
 ## API
@@ -48,6 +49,9 @@ licensed to use, replace that one file; nothing else references it by content.
 | `POST /api/admin/games` | admin | `NewGameInput` → `201 Game` |
 | `DELETE /api/admin/games/{id}` | admin | `204` |
 | `DELETE /api/admin/claims/{gameId}` | admin | `204` |
+| `GET /api/admin/roster` | admin | `{ members: RosterMember[] }` |
+| `POST /api/admin/roster` | admin | `{ emails: string[] }` (≤100) → `201 { members }` |
+| `DELETE /api/admin/roster/{email}` | admin | `204` |
 
 Errors are `{ error: { code, message } }` with the codes in `packages/shared/src/errors.ts`.
 Admin routes are gated twice: SWA route rules (`staticwebapp.config.json`) and `requireAdmin` in
@@ -55,5 +59,6 @@ the API, so a misconfigured rule cannot expose emails.
 
 ## Data
 
-Two Table Storage tables. `games`: partition `game`, row key = game id (`YYYY-MM-DD-opponent-slug`).
+Three Table Storage tables. `roster`: partition `member`, row key = email (with the four characters
+Table Storage forbids in keys mapped to `_`). `games`: partition `game`, row key = game id (`YYYY-MM-DD-opponent-slug`).
 `claims`: partition `claim`, row key = game id, which is what enforces one sign-up per game.

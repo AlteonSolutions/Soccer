@@ -207,14 +207,6 @@ main {
   flex-wrap: wrap;
   gap: 0.2rem 0.9rem;
 }
-.game .notes {
-  margin: 0.55rem 0 0;
-  padding: 0.4rem 0.7rem;
-  background: var(--sky-tint);
-  border-left: 3px solid var(--sky);
-  border-radius: 8px;
-  font-size: 0.93rem;
-}
 .snack {
   justify-self: end;
   text-align: right;
@@ -318,6 +310,8 @@ form.claim label {
 form.claim input,
 .admin-form input {
   font: inherit;
+  width: 100%;
+  min-width: 0;
   padding: 0.6rem 0.75rem;
   border: 1.5px solid var(--line);
   border-radius: 10px;
@@ -415,6 +409,54 @@ footer {
   padding: 1rem;
 }
 
+.hint {
+  margin: -0.4rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.roster-form {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+.roster-form textarea {
+  font: inherit;
+  width: 100%;
+  min-height: 5.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  resize: vertical;
+}
+.roster-form textarea:focus {
+  outline: none;
+  border-color: var(--sky-deep);
+  box-shadow: 0 0 0 3px rgba(108, 171, 221, 0.35);
+}
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.roster li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.6rem;
+  border-top: 1px solid var(--line);
+}
+.roster li.empty {
+  color: var(--muted);
+  border: 0;
+}
+.roster li button {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 640px) {
   .hero {
     padding: 1.5rem 1rem 2.25rem;
@@ -432,6 +474,9 @@ footer {
     text-align: left;
   }
   form.claim {
+    grid-template-columns: 1fr;
+  }
+  .roster-form {
     grid-template-columns: 1fr;
   }
 }

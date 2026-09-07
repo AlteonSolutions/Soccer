@@ -1,6 +1,13 @@
 import { createMemoryRepo } from "@soccer/shared";
 import { describe, expect, it } from "vitest";
-import { addGame, listAdminGames, releaseClaim, removeGame } from "../api/src/lib/admin.js";
+import {
+  addGame,
+  addRosterMembers,
+  listAdminGames,
+  releaseClaim,
+  removeGame,
+  removeRosterMember,
+} from "../api/src/lib/admin.js";
 import { claim, game } from "../../../packages/shared/test/fixtures.js";
 
 describe("admin", () => {
@@ -31,5 +38,18 @@ describe("admin", () => {
     await releaseClaim(repo, game().id);
     expect(await repo.getClaim(game().id)).toBeUndefined();
     expect(await repo.getGame(game().id)).toBeDefined();
+  });
+
+  it("adds pasted roster emails once each, sorted, and removes one", async () => {
+    const repo = createMemoryRepo();
+    const now = new Date("2026-09-01T00:00:00Z");
+    const members = await addRosterMembers(
+      repo,
+      { emails: ["b@example.com", "a@example.com", "b@example.com"] },
+      now,
+    );
+    expect(members.map((m) => m.email)).toEqual(["a@example.com", "b@example.com"]);
+    await removeRosterMember(repo, "a@example.com");
+    expect((await repo.listRoster()).map((m) => m.email)).toEqual(["b@example.com"]);
   });
 });

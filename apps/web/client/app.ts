@@ -71,7 +71,6 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
     <div>
       <h2></h2>
       <p class="meta"><span class="kickoff"></span><span class="where"></span></p>
-      ${game.notes ? '<p class="notes"></p>' : ""}
     </div>
     <div class="snack"></div>`;
   (item.querySelector(".month") as HTMLElement).textContent = parts.month;
@@ -81,7 +80,6 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
   (item.querySelector(".kickoff") as HTMLElement).textContent =
     `${formatDate(game.date)} · ${formatKickoff(game.kickoff)}`;
   (item.querySelector(".where") as HTMLElement).textContent = game.location;
-  if (game.notes) (item.querySelector(".notes") as HTMLElement).textContent = game.notes;
 
   const snack = item.querySelector(".snack") as HTMLElement;
   if (game.snack_by || past) {

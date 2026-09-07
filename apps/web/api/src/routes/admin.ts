@@ -1,6 +1,15 @@
 import { app, type HttpRequest, type InvocationContext } from "@azure/functions";
-import { gameIdSchema, newGameInputSchema, withData } from "@soccer/shared";
-import { addGame, listAdminGames, releaseClaim, removeGame } from "../lib/admin.js";
+import { gameIdSchema, newGameInputSchema, rosterInputSchema, withData } from "@soccer/shared";
+import { z } from "zod";
+import {
+  addGame,
+  addRosterMembers,
+  listAdminGames,
+  listRoster,
+  releaseClaim,
+  removeGame,
+  removeRosterMember,
+} from "../lib/admin.js";
 import { json, parseBody, parseParam, toErrorResponse } from "../lib/http.js";
 import { requireAdmin } from "../lib/principal.js";
 
@@ -47,6 +56,44 @@ app.http("admin-claim", {
       requireAdmin(request.headers.get(PRINCIPAL_HEADER));
       const gameId = parseParam(request.params.gameId, gameIdSchema, "game id");
       await withData((repo) => releaseClaim(repo, gameId));
+      return json(204, undefined);
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+app.http("admin-roster", {
+  route: "admin/roster",
+  methods: ["GET", "POST"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      if (request.method === "GET") return json(200, { members: await withData(listRoster) });
+      const input = await parseBody(request, rosterInputSchema);
+      return json(201, {
+        members: await withData((repo) => addRosterMembers(repo, input, new Date())),
+      });
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+app.http("admin-roster-member", {
+  route: "admin/roster/{email}",
+  methods: ["DELETE"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const email = parseParam(
+        decodeURIComponent(request.params.email ?? ""),
+        z.email().toLowerCase(),
+        "email",
+      );
+      await withData((repo) => removeRosterMember(repo, email));
       return json(204, undefined);
     } catch (error) {
       return toErrorResponse(error, context);

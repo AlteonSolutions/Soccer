@@ -1,6 +1,7 @@
 /*
- * Entry point of the reminders Function App: one timer trigger, thin, calling runReminders().
- * Lives in its own Function App because Static Web Apps Free runs HTTP triggers only.
+ * Entry point of the reminders Function App: one daily timer trigger, thin, calling
+ * runReminders(), which decides whether today is Monday (snack reminder) or Thursday (team
+ * reminder). Lives in its own Function App because Static Web Apps Free runs HTTP triggers only.
  */
 import { app, type InvocationContext, type Timer } from "@azure/functions";
 import { loadConfig, localDateIso, sendEmail, withData } from "@soccer/shared";
@@ -16,7 +17,6 @@ app.timer("send-reminders", {
       runReminders(repo, {
         now,
         today: localDateIso(now, config.TIMEZONE),
-        daysAhead: config.REMINDER_DAYS_AHEAD,
         teamName: config.TEAM_NAME,
         siteUrl: config.SITE_URL,
         coachEmail: config.COACH_EMAIL,

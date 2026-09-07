@@ -1,8 +1,11 @@
 /*
- * The snack sign-up rules, as pure functions of (games, claims, now). No storage, no HTTP, no
- * email client: everything here is called from route handlers and the reminder timer and is
- * tested directly. The quiet failures live here — a parent's email leaking into the public view,
- * a reminder going out twice, a claim accepted for a game already played.
+ * The snack sign-up and reminder rules, as pure functions of (games, claims, roster, today). No
+ * storage, no HTTP, no email client: everything here is called from route handlers and the
+ * reminder timer and is tested directly. The quiet failures live here — a parent's email leaking
+ * into the public view, a reminder going out twice, a claim accepted for a game already played.
+ *
+ * The week, as the coach described it: games are on Saturday. Monday, the family on snacks gets
+ * a reminder. Thursday, the whole roster gets a reminder about Saturday's game.
  */
 import type { Claim, Game, NewGameInput, PublicGame } from "./schemas.js";
 
@@ -23,6 +26,21 @@ export function addDays(dateIso: string, days: number): string {
   const shifted = new Date(Date.UTC(y, m - 1, d + days));
   return shifted.toISOString().slice(0, 10);
 }
+
+/** 0 = Sunday … 6 = Saturday, for a YYYY-MM-DD string, independent of the machine's zone. */
+export function weekdayOf(dateIso: string): number {
+  const [y, m, d] = dateIso.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+}
+
+// Monday: the family on snacks has the working week to shop.
+export const SNACK_REMINDER_WEEKDAY = 1;
+// Thursday: two days' notice for a Saturday game, late enough that plans are real.
+export const TEAM_REMINDER_WEEKDAY = 4;
+// Monday's window reaches the coming Saturday and Sunday (6 days), so a Sunday game is covered too.
+const SNACK_WINDOW_DAYS = 6;
+// Thursday's window reaches Sunday (3 days) for the same reason.
+const TEAM_WINDOW_DAYS = 3;
 
 /** A URL-safe id from the game date and opponent: "2026-09-13-red-dragons". */
 export function gameIdFor(input: Pick<NewGameInput, "date" | "opponent">): string {
@@ -47,50 +65,61 @@ export function sortByDate<T extends Pick<Game, "date" | "kickoff">>(games: read
 /** The public schedule: every game with the claimant's name and nothing else from the claim. */
 export function toPublicSchedule(games: readonly Game[], claims: readonly Claim[]): PublicGame[] {
   const byGame = new Map(claims.map((c) => [c.game_id, c]));
+  // Explicit columns: a new field on Game (like team_reminded_at) stays private until named here.
   return sortByDate(games).map((game) => ({
-    ...game,
+    id: game.id,
+    date: game.date,
+    kickoff: game.kickoff,
+    opponent: game.opponent,
+    location: game.location,
     snack_by: byGame.get(game.id)?.parent_name ?? null,
   }));
 }
 
-export interface ReminderDue {
+function inWindow(game: Pick<Game, "date">, today: string, days: number): boolean {
+  return game.date >= today && game.date <= addDays(today, days);
+}
+
+export interface SnackReminderDue {
   game: Game;
   claim: Claim;
 }
 
 /**
- * Claims that need a reminder today: the game is between today and `daysAhead` days out
- * inclusive, and no reminder has gone out yet. `reminded_at` is the idempotency key — the timer
- * runs daily and must never send twice.
+ * Monday's list: claims for games in the coming week that have not been reminded. `reminded_at`
+ * is the idempotency key — the timer runs daily and must never send twice.
  */
-export function selectRemindersDue(
+export function selectSnackReminders(
   games: readonly Game[],
   claims: readonly Claim[],
   today: string,
-  daysAhead: number,
-): ReminderDue[] {
-  const horizon = addDays(today, daysAhead);
+): SnackReminderDue[] {
   const byId = new Map(games.map((g) => [g.id, g]));
-  const due: ReminderDue[] = [];
+  const due: SnackReminderDue[] = [];
   for (const claim of claims) {
     const game = byId.get(claim.game_id);
-    if (!game || claim.reminded_at !== null) continue;
-    if (game.date >= today && game.date <= horizon) due.push({ game, claim });
+    if (game && claim.reminded_at === null && inWindow(game, today, SNACK_WINDOW_DAYS))
+      due.push({ game, claim });
   }
   return due.sort((a, b) => a.game.date.localeCompare(b.game.date));
 }
 
-/** Upcoming games inside the window that nobody has signed up for — the coach's nudge. */
+/** Thursday's list: games this weekend the whole team has not been told about yet. */
+export function selectTeamReminders(games: readonly Game[], today: string): Game[] {
+  return sortByDate(
+    games.filter((g) => g.team_reminded_at === null && inWindow(g, today, TEAM_WINDOW_DAYS)),
+  );
+}
+
+/** Games in the coming week that nobody has signed up for — the coach's Monday nudge. */
 export function selectUnclaimed(
   games: readonly Game[],
   claims: readonly Claim[],
   today: string,
-  daysAhead: number,
 ): Game[] {
-  const horizon = addDays(today, daysAhead);
   const claimed = new Set(claims.map((c) => c.game_id));
   return sortByDate(
-    games.filter((g) => !claimed.has(g.id) && g.date >= today && g.date <= horizon),
+    games.filter((g) => !claimed.has(g.id) && inWindow(g, today, SNACK_WINDOW_DAYS)),
   );
 }
 
@@ -113,9 +142,8 @@ export function confirmationEmail(
     subject: `${teamName}: you're on snacks for ${game.date}`,
     text:
       `Hi ${claim.parent_name},\n\n` +
-      `Thanks for signing up to bring snacks for the ${teamName} game on ${describeGame(game)}.\n` +
-      (game.notes ? `\nNotes from the coach: ${game.notes}\n` : "") +
-      `\nWe'll send one reminder a couple of days before. If plans change, let the coach know.\n\n` +
+      `Thanks for signing up to bring snacks for the ${teamName} game on ${describeGame(game)}.\n\n` +
+      `We'll send one reminder on the Monday before. If plans change, let the coach know.\n\n` +
       `Schedule: ${siteUrl}\n`,
   };
 }
@@ -127,12 +155,31 @@ export function reminderEmail(
   siteUrl: string,
 ): EmailCopy {
   return {
-    subject: `${teamName}: snack reminder for ${game.date}`,
+    subject: `${teamName}: snacks this week — ${game.date}`,
     text:
       `Hi ${claim.parent_name},\n\n` +
-      `Quick reminder: you're bringing snacks for the ${teamName} game on ${describeGame(game)}.\n` +
-      (game.notes ? `\nNotes from the coach: ${game.notes}\n` : "") +
-      `\nThank you!\n\nSchedule: ${siteUrl}\n`,
+      `Quick reminder: you're bringing snacks for the ${teamName} game on ${describeGame(game)}.\n\n` +
+      `Thank you!\n\nSchedule: ${siteUrl}\n`,
+  };
+}
+
+/** Thursday's note to every family. Names the snack family; never their email. */
+export function teamReminderEmail(
+  game: Game,
+  claim: Claim | undefined,
+  teamName: string,
+  siteUrl: string,
+): EmailCopy {
+  const snacks = claim
+    ? `Snacks: ${claim.parent_name}.`
+    : `Snacks: nobody has signed up yet — grab the slot at ${siteUrl}`;
+  return {
+    subject: `${teamName}: game this Saturday vs ${game.opponent}`,
+    text:
+      `Hi ${teamName} families,\n\n` +
+      `Reminder: game on ${describeGame(game)}.\n\n` +
+      `${snacks}\n\n` +
+      `See you there!\n\nSchedule: ${siteUrl}\n`,
   };
 }
 

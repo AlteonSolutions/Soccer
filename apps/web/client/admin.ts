@@ -2,13 +2,15 @@
  * The coach's page: add and remove games, see every sign-up with its email, release a slot.
  * Reached only through SWA authentication with the `admin` role; the API checks again.
  */
-import type { AdminGame } from "@soccer/shared/schemas";
+import type { AdminGame, RosterMember } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
 import { formatDate, formatKickoff } from "./lib/format.js";
 
 const status = document.getElementById("status") as HTMLParagraphElement;
 const rows = document.getElementById("rows") as HTMLTableSectionElement;
 const addForm = document.getElementById("add-game") as HTMLFormElement;
+const rosterList = document.getElementById("roster") as HTMLUListElement;
+const rosterForm = document.getElementById("add-roster") as HTMLFormElement;
 
 function setStatus(text: string, isError = false): void {
   status.textContent = text;
@@ -53,7 +55,7 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   );
   const sub = document.createElement("span");
   sub.className = "sub";
-  sub.textContent = game.notes ? `${game.location} — ${game.notes}` : game.location;
+  sub.textContent = game.location;
   when.append(sub);
   const email = cell(game.claim ? game.claim.email : "—");
   email.className = "mono";
@@ -78,15 +80,66 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   return tr;
 }
 
+function renderMember(member: RosterMember): HTMLLIElement {
+  const li = document.createElement("li");
+  const email = document.createElement("span");
+  email.className = "mono";
+  email.textContent = member.email;
+  li.append(
+    email,
+    actionButton("Remove", "danger", () =>
+      request("DELETE", `/api/admin/roster/${encodeURIComponent(member.email)}`),
+    ),
+  );
+  return li;
+}
+
+function renderRoster(members: RosterMember[]): void {
+  rosterList.replaceChildren(...members.map(renderMember));
+  if (members.length === 0) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "No addresses yet, so the Thursday reminder goes to nobody.";
+    rosterList.append(li);
+  }
+}
+
 async function load(): Promise<void> {
   try {
-    const { games } = await request<{ games: AdminGame[] }>("GET", "/api/admin/games");
+    const [{ games }, { members }] = await Promise.all([
+      request<{ games: AdminGame[] }>("GET", "/api/admin/games"),
+      request<{ members: RosterMember[] }>("GET", "/api/admin/roster"),
+    ]);
     rows.replaceChildren(...games.map(renderRow));
+    renderRoster(members);
     setStatus(games.length === 0 ? "No games yet. Add the first one above." : "");
   } catch (error) {
     report(error, "Could not load the games.");
   }
 }
+
+rosterForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const raw = String(new FormData(rosterForm).get("emails") ?? "");
+  const emails = raw
+    .split(/[\s,;]+/)
+    .map((e) => e.trim())
+    .filter(Boolean);
+  const submit = rosterForm.querySelector("button[type=submit]") as HTMLButtonElement;
+  submit.disabled = true;
+  try {
+    const { members } = await request<{ members: RosterMember[] }>("POST", "/api/admin/roster", {
+      emails,
+    });
+    rosterForm.reset();
+    renderRoster(members);
+    setStatus(`${members.length} address${members.length === 1 ? "" : "es"} on the list.`);
+  } catch (error) {
+    report(error, "Could not add those addresses.");
+  } finally {
+    submit.disabled = false;
+  }
+});
 
 addForm.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -99,7 +152,6 @@ addForm.addEventListener("submit", async (event) => {
       kickoff: String(data.get("kickoff") ?? ""),
       opponent: String(data.get("opponent") ?? ""),
       location: String(data.get("location") ?? ""),
-      notes: String(data.get("notes") ?? ""),
     });
     addForm.reset();
     await load();

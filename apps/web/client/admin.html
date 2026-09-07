@@ -28,7 +28,6 @@
           <label>Kickoff <input name="kickoff" type="time" required /></label>
           <label>Opponent <input name="opponent" required maxlength="80" /></label>
           <label>Location <input name="location" required maxlength="120" /></label>
-          <label>Notes <input name="notes" maxlength="300" placeholder="Optional" /></label>
           <button type="submit" class="primary">Add Game</button>
         </form>
       </section>
@@ -47,6 +46,23 @@
             <tbody id="rows"></tbody>
           </table>
         </div>
+      </section>
+      <section class="card">
+        <h2>Team Email List</h2>
+        <p class="hint">
+          Every address here gets the Thursday game reminder. Paste one email per line or separated
+          by commas. Emails are never shown outside this page.
+        </p>
+        <form id="add-roster" class="roster-form">
+          <textarea
+            name="emails"
+            rows="4"
+            placeholder="parent@example.com&#10;another@example.com"
+            required
+          ></textarea>
+          <button type="submit" class="primary">Add To List</button>
+        </form>
+        <ul id="roster" class="roster"></ul>
       </section>
     </main>
     <script type="module" src="/admin.js"></script>

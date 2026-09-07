@@ -32,8 +32,6 @@ const envSchema = z
     // Where "nobody has signed up for Saturday" nudges go. Optional: without it, no nudge is sent.
     COACH_EMAIL: z.email().optional(),
 
-    // Reminders go out this many days before a game. 2 gives a parent one shopping day.
-    REMINDER_DAYS_AHEAD: z.coerce.number().int().min(0).max(14).default(2),
     // Game dates are calendar dates in the team's zone; "today" is computed in it, not in UTC.
     TIMEZONE: z.string().min(1).default("America/New_York"),
 

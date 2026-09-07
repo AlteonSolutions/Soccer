@@ -7,7 +7,7 @@ export function game(overrides: Partial<Game> = {}): Game {
     kickoff: "10:00",
     opponent: "Red Dragons",
     location: "Field 3, Riverside Park",
-    notes: "",
+    team_reminded_at: null,
     ...overrides,
   };
 }

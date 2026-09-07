@@ -8,15 +8,18 @@ _Written to be read cold. Update it in the same commit as the change it describe
 
 - `apps/web` — the public schedule and sign-up page, the coach's admin page, and the HTTP API as
   Azure Functions. Built into `dist/` by esbuild and deployed as one Static Web App (Free tier).
-- `apps/reminders` — a Consumption-plan Function App with one daily timer: reminder to the parent
-  on duty, nudge to the coach for unclaimed games.
+- `apps/reminders` — a Consumption-plan Function App with one daily timer. Monday: reminder to
+  the family on snacks this week, nudge to the coach if nobody is. Thursday: reminder about
+  Saturday's game to every address on the coach-managed team email list.
 - `packages/shared` — schemas, config, the Table Storage data guard (`withData()`), email behind
   the capture-vs-send flag, and the pure sign-up/reminder rules.
 - `infra/main.bicep` — every Azure resource, at the lowest tier. **Not yet applied.**
 - Specs: `docs/spec/snack-signup.md`, `docs/spec/reminder-emails.md`.
 
-**What is verified.** `pnpm run gate` passes: typecheck of every package, lint, format, 38 tests.
-The Table Storage repo round-trips against Azurite. Both Function Apps build to a single file.
+**What is verified.** `pnpm run gate` passes: typecheck of every package, lint, format, 47 tests.
+The Table Storage repo round-trips against Azurite, roster included. Both Function Apps build to a
+single file. The public and admin pages have been driven in headless Chromium against the real
+client bundle and handler logic (in-memory storage) and screenshotted at desktop and phone width.
 
 **What is not verified, and how it gets verified.**
 

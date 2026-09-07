@@ -44,12 +44,13 @@ jobs:
       - name: Test
         run: pnpm test
 
-  # Deploys run only from main, only after the gate, and only once the repository variable
-  # DEPLOY_ENABLED is "true" — set it after docs/runbooks/first-deploy.md has created the Azure
-  # resources and the two secrets. Until then a push to main is gated and goes nowhere.
+  # Deploys run only from main (a push, or a manual "Run workflow" on main to redeploy), only after
+  # the gate, and only once the repository variable DEPLOY_ENABLED is "true" — set it after
+  # docs/runbooks/first-deploy.md has created the Azure resources and the two secrets. Until then a
+  # push to main is gated and goes nowhere.
   deploy-web:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -72,7 +73,7 @@ jobs:
 
   deploy-reminders:
     needs: test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

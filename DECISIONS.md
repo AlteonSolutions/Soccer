@@ -11,6 +11,19 @@ old one. Entry format:
 **Consequence.** What this costs or constrains. Supersedes: <date, or "none">.
 ```
 
+### 2026-09-07 — Merge pull requests with a merge commit; deploy from `main` only
+**Context.** The first pull request is ready and the delivery-flow row was still open. Every commit
+on the branch carries the prose body the house convention asks for; a squash would replace nine
+worked examples with one.
+**Decision.** One branch per change, a pull request into `main`, merged with a merge commit so the
+branch's commits and their bodies stay in `git log`. CI gates every push; the deploy jobs run only
+from `main`, on a push or a manual workflow run, and only while `DEPLOY_ENABLED` is set.
+**Rejected.** Squash merging: the recommended default in the audit, but it discards exactly the
+history this repo invests in. Rebase merging: rewrites history on a branch someone may have
+checked out.
+**Consequence.** `git log --first-parent main` reads as one line per pull request; the full log
+reads as the reasoning. Supersedes: none.
+
 ### 2026-09-07 — Host on Azure at the lowest tier of everything, from the owner's existing accounts
 **Context.** The owner has Azure and Microsoft accounts and a domain, wants everything on the
 Microsoft side, and wants the smallest possible bill. The app serves one team: a few hits a week.
@@ -239,7 +252,6 @@ current answers.
 | Commit body | Multi-paragraph why; multi-paragraph why; six-paragraph why; short | Prose body: problem, decision, rejected alternative, consequence | Called "the single strongest convention in the repo and documented nowhere" |
 | Trailers | Both on 100% of commits; both on recent commits; both, inconsistently; none | Both, on every commit | Consistency is the variant worth copying, not the presence |
 | Branch naming | `claude/<slug>`; `claude/<adjective-hash>` + a private data branch; `feature/<slug>`; `<kind>/<slug>` incl. `claude/`, `docs/`, `review/` | `<kind>/<slug>`, `claude/` for agent sessions | Superset of the others; agree the kinds up front |
-| Delivery flow | Long-lived branch, no PRs; direct pushes to main; manual paste; PR merge commits, one commit per PR, no squash | PRs into trunk, squash, one branch per change | The long-lived-branch project needed 15 PRs to merge one branch |
 | PR template / CODEOWNERS | None in any of the four | A short PR template: what changed, why, what you ran | Three listed it under missing-before-day-one |
 | Where production data lives | A private `data-deploy` git branch merged at build; gitignored runtime files; n/a; cloud storage | Never a git branch | Works, but couples a data update to a deploy |
 | Windows launcher | `start.bat` with `git fetch` + `reset --hard`; `start-backend.bat`; two `.bat` launchers; `start.bat` with `reset --hard` | Keep the launcher, drop the hard reset — refuse to start on a dirty tree | Present in three of four, and the reset silently destroys uncommitted work |

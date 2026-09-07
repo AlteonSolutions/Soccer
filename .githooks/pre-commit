@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# The fast half of the gate, enforced. Across the four audited projects, nothing mechanically blocked
+# a commit and every quality gate was honour-system; CI caught things only after the fact.
+#
+# Typecheck + lint + format only — the full test suite stays in `npm run gate` and CI so this hook
+# takes seconds and nobody learns to reflex `--no-verify`.
+#
+# Enable once per clone (SETUP.md step): git config core.hooksPath .githooks
+
+set -e
+
+echo "pre-commit: typecheck"
+{{GATE_TYPECHECK_CMD}}
+
+echo "pre-commit: lint"
+{{GATE_LINT_CMD}}
+
+echo "pre-commit: format check"
+{{GATE_FORMAT_CMD}}
+
+echo "pre-commit: ok (tests run in \`npm run gate\` and in CI)"

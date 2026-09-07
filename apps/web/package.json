@@ -1,0 +1,17 @@
+{
+  "name": "@soccer/web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The public site (client/) and its HTTP API (api/), deployed together as one Azure Static Web App.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc -p client/tsconfig.json --noEmit && tsc -p api/tsconfig.json --noEmit",
+    "dev": "pnpm run build && node dev.mjs"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.16.2",
+    "@soccer/shared": "workspace:*",
+    "zod": "^4.5.4"
+  }
+}

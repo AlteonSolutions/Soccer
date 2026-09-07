@@ -1,0 +1,23 @@
+{
+  "platform": {
+    "apiRuntime": "node:22"
+  },
+  "routes": [
+    { "route": "/admin*", "allowedRoles": ["admin"] },
+    { "route": "/api/admin/*", "allowedRoles": ["admin"] },
+    {
+      "route": "/login",
+      "redirect": "/.auth/login/aad?post_login_redirect_uri=/admin.html",
+      "statusCode": 302
+    },
+    { "route": "/logout", "redirect": "/.auth/logout", "statusCode": 302 }
+  ],
+  "responseOverrides": {
+    "401": { "redirect": "/.auth/login/aad?post_login_redirect_uri=.referrer", "statusCode": 302 },
+    "403": { "rewrite": "/forbidden.html", "statusCode": 403 }
+  },
+  "globalHeaders": {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "same-origin"
+  }
+}

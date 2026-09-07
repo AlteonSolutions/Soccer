@@ -1,0 +1,6 @@
+{
+  // Typecheck only; esbuild bundles src/routes/index.ts into dist/api/index.js (see ../build.mjs).
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["src"]
+}

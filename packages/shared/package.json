@@ -2,22 +2,18 @@
   "name": "@soccer/shared",
   "version": "0.1.0",
   "private": true,
-  "description": "Types, schemas and the config module shared by every app in this repo.",
+  "description": "Types, zod schemas, the config module, the data guard and email \u2014 everything more than one app imports. Consumed as source: every app bundles it with esbuild.",
   "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
+    ".": "./src/index.ts",
+    "./schemas": "./src/schemas.ts"
   },
-  "files": [
-    "dist"
-  ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@azure/communication-email": "^1.1.0",
+    "@azure/data-tables": "^13.3.2",
     "zod": "^4.5.4"
   }
 }

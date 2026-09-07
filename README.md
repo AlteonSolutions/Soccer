@@ -1,50 +1,58 @@
 # soccer
 
 A small web app for the kids' soccer team its maintainer coaches: snack sign-up and reminder emails
-for parents.
+for parents. Public schedule, no parent accounts; the coach signs in with a Microsoft account.
 
 ## Quick start
 
 ```
-pnpm run setup      # checks Node 22 + pnpm, installs frozen, writes .env, wires git hooks
-pnpm run dev        # starts every app's dev server (no app exists yet — see STATUS.md)
+pnpm run setup      # checks Node 22, pnpm, func; installs frozen; writes .env; wires git hooks
+pnpm run dev        # Azurite + the site on http://localhost:4280 (admin: /login, pick role "admin")
 pnpm run gate       # typecheck every package, lint, format check, tests — run before "done"
 ```
 
-If `pnpm` is not on your PATH: `corepack enable && corepack prepare pnpm@10.33.0 --activate`.
-Fresh-clone details and what each step checks for: `SETUP.md`.
+`pnpm run dev` needs Azure Functions Core Tools (`func`) on PATH; setup prints the install command.
+If `pnpm` is missing: `corepack enable && corepack prepare pnpm@10.33.0 --activate`.
+Fresh-clone details: `SETUP.md`. Deploying: `docs/runbooks/first-deploy.md`.
 
 ## Layout
 
 ```
-apps/                 deployable apps (empty until the first one lands)
-packages/shared/      @soccer/shared — types, zod schemas, and the config module
-  src/config.ts       the only place process.env is read; fails fast naming the variable
-  test/               mirrors src/
-scripts/setup.mjs     `pnpm run setup`
-docs/spec/            what each feature does, written before it is built
-docs/runbooks/        how to operate it once deployed
-.claude/              house commands (/gate, /ship, /decision, /preflight), hooks, permissions
-.githooks/pre-commit  typecheck + lint + format on every commit; tests stay in `gate` and CI
+apps/web/               one Azure Static Web App
+  client/               the public page and the coach's admin page: HTML, CSS, TypeScript, no framework
+  api/src/routes/       thin HTTP entry points (Azure Functions v4); every route is imported in index.ts
+  api/src/lib/          the logic behind them, framework-free, tested directly
+  build.mjs             esbuild → dist/client (app_location) and dist/api (api_location)
+apps/reminders/         Consumption-plan Function App: one daily timer
+packages/shared/        @soccer/shared — consumed as source by every app
+  src/schemas.ts        every boundary shape, as zod; the public shapes cannot carry an email
+  src/config.ts         the only place process.env is read; fails fast naming the variable
+  src/data.ts           withData(): the only door to Table Storage; the raw client is not exported
+  src/email.ts          ACS email behind EMAIL_LIVE, capture by default
+  src/snacks.ts         the sign-up and reminder rules as pure functions
+infra/main.bicep        every Azure resource (not yet applied — see its first line)
+docs/spec/              what each feature does · docs/runbooks/ how to operate it
+scripts/setup.mjs       `pnpm run setup`
 ```
 
-pnpm workspaces, one lockfile at the root. Node 22 is pinned in `package.json` `engines`, in
-`.github/workflows/ci.yml`, and nowhere else yet; those change together.
+pnpm workspaces, one lockfile. Node 22 is pinned in `package.json` `engines`, `ci.yml`,
+`infra/main.bicep` (`nodeMajor`) and `apps/web/client/staticwebapp.config.json`; they change together.
 
 ## Architecture
 
-- **TypeScript, ESM `NodeNext`** everywhere. Relative imports carry a `.js` extension even in `.ts`.
-- **Entry points stay thin.** Each app's `src/routes/` holds handlers that call named functions in
-  `lib/`, which import no framework, so tests call them directly.
-- **One shared module.** `@soccer/shared` owns every type and zod schema used by more than one
-  place. Apps consume its `dist`; Vitest aliases it to source (see `vitest.config.ts`).
-- **Configuration is read once**, in `packages/shared/src/config.ts`, validated with zod, with a
-  `ConfigError` that names the offending variables and says what to do. ESLint forbids
-  `process.env` anywhere else. `.env.example` lists every variable.
-- **Quality gate.** `pnpm run gate` = typecheck (every package) + ESLint flat + Prettier check +
-  Vitest against source. The pre-commit hook runs the fast half; CI runs all of it on every push.
-- **Deploy target: none yet.** When one is chosen it gets a workflow that `needs: test` and a
-  dated entry in `DECISIONS.md`.
+- **Azure, lowest tier of everything.** Static Web Apps Free hosts the site, its API and the
+  coach's sign-in, and gives the custom domain a free certificate. Table Storage holds the data.
+  Communication Services sends email from your domain. A Consumption Function App runs the daily
+  timer, because SWA Free is HTTP-only. Bicep in `infra/` creates all of it.
+- **TypeScript, ESM `NodeNext`**, relative imports with `.js` extensions. Every app bundles with
+  esbuild into one file, so the platform installs nothing and `workspace:` deps are no problem.
+- **Entry points stay thin.** `api/src/routes/` registers functions; `api/src/lib/` does the work
+  with a `DataRepo` and a `SendEmail` passed in, so tests use the in-memory repo and captured email.
+- **Privacy by type.** `publicGameSchema` has a name, not an email. Admin routes are gated by SWA
+  route rules and again by `requireAdmin` in the API.
+- **Email never fails the primary action** and never leaves the building until `EMAIL_LIVE=on`.
+- **Quality gate.** `pnpm run gate` = typecheck (every package) + ESLint + Prettier + Vitest against
+  source, with an Azurite-backed test that skips itself when the emulator is down. The pre-commit
+  hook runs the fast half; CI runs all of it on every push, and deploys from `main` only after it.
 
-The rules the code follows are in `CLAUDE.md`; why they were chosen is in `DECISIONS.md`; where
-things stand right now is in `STATUS.md`.
+Rules: `CLAUDE.md`. Why: `DECISIONS.md`. Where things stand: `STATUS.md`.

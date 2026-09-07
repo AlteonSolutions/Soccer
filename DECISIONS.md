@@ -11,6 +11,65 @@ old one. Entry format:
 **Consequence.** What this costs or constrains. Supersedes: <date, or "none">.
 ```
 
+### 2026-09-07 — Host on Azure at the lowest tier of everything, from the owner's existing accounts
+**Context.** The owner has Azure and Microsoft accounts and a domain, wants everything on the
+Microsoft side, and wants the smallest possible bill. The app serves one team: a few hits a week.
+**Decision.** Azure Static Web Apps **Free** hosts the site, its HTTP API as managed Functions,
+the custom domain with a free certificate, and the coach's sign-in (built-in Entra provider, role
+`admin`). Azure Table Storage holds the data. Azure Communication Services sends email from the
+owner's domain. A Consumption-plan Function App runs the daily timer, because SWA Free is HTTP-only.
+Application Insights (free below 5 GB/month) gives both Function hosts logs. `infra/main.bicep`
+creates all of it and is authoritative once applied; deploys run from `main` only, after the gate,
+and only once the repository variable `DEPLOY_ENABLED` is set.
+**Rejected.** App Service Basic (about $13/month idle). SWA Standard (about $9/month) only to get
+timer triggers inside one deployable. Cosmos DB free tier and Azure SQL free offer: capable, but
+far more machinery than a few hundred rows need. A GitHub Actions cron for reminders: free, but it
+puts the schedule outside Azure. Microsoft 365 SMTP from a mailbox: ties the app to a personal
+credential, the secret-in-config hazard the house rules exist for.
+**Consequence.** Two deployables (SWA, reminders Function App) instead of one; the reminders app
+is tiny and shares every module. Expected cost is under a few dollars a month. Supersedes:
+2026-09-07 "Defer the deploy target".
+
+### 2026-09-07 — No parent accounts; the site is public and a sign-up is a name plus an email that only the coach sees
+**Context.** The owner asked for the simplest thing: parents visit a page, sign up for a game with
+their email, no login. Emails must be stored privately.
+**Decision.** Public schedule, no auth for parents. A sign-up stores `parent_name` and `email` in
+the `claims` table. The public API and page show the name; the email is in `claimSchema` and the
+admin API only, and `publicGameSchema` is typed so it cannot carry one. Admin routes are gated by
+SWA route rules and again by `requireAdmin` in the API. The coach signs in with a Microsoft
+account and the `admin` role; there is exactly one privileged user. Single tenant: one team.
+**Rejected.** Per-family private links (proposed earlier the same day): more privacy plumbing than
+a team snack list needs. Parents releasing their own slot: with no account there is nothing to
+prove it is theirs, so release is the coach's job.
+**Consequence.** Anyone with the URL can sign up under any name; the coach is the moderator. If
+that is ever abused, a per-claim secret link in the confirmation email is the smallest fix.
+Supersedes: none.
+
+### 2026-09-07 — Consume `@soccer/shared` as source everywhere; each app bundles itself with esbuild
+**Context.** The morning's entry had apps consume `dist` and Vitest alias to source. Building the
+first app showed the real constraint: Oryx (the SWA build service) cannot install `workspace:`
+dependencies, so the API must be bundled before deploy anyway — and once esbuild bundles, a
+`dist` for the shared package has no consumer.
+**Decision.** `packages/shared` has no build. Its `exports` point at `.ts` (`.` and `./schemas`);
+tsc, Vitest and esbuild all resolve it to source. Each app's `build.mjs` bundles one file per
+entry (CJS for the Functions hosts, ESM for the browser) and the deploy uses `skip_api_build`.
+`@azure/functions-core` is the one external: the worker provides it at runtime.
+**Rejected.** Keeping `dist` plus a Vitest alias: the split-consumption hazard the audit flagged,
+for nothing. TS project references: more config to get the same source-of-truth.
+**Consequence.** The browser client may only import from `@soccer/shared/schemas` (no Node
+imports); its tsconfig has no Node types so the compiler enforces it. Supersedes: 2026-09-07
+"Use pnpm workspaces" (the source/dist paragraph only; the layout stands).
+
+### 2026-09-07 — Azurite-backed test for the real data repo, self-skipping
+**Context.** The in-memory repo proves the logic, not the storage mapping. The first Azurite run
+caught a real bug (Table Storage returns `odata.metadata` on point reads and cannot store null).
+**Decision.** `packages/shared/test/data.test.ts` runs against Azurite when port 10002 answers and
+skips itself, saying so, when it does not. Azurite is a devDependency; `pnpm run dev:storage`.
+**Rejected.** Mocking the SDK: it would have passed the buggy code. Requiring Azurite for the gate:
+would fail on a machine that only wants to lint.
+**Consequence.** The gate is only fully meaningful with Azurite up; CI does not start it yet, so
+run it locally before touching `data.ts`. Supersedes: none.
+
 ### 2026-09-07 — Use pnpm workspaces: `apps/*` for apps, `packages/*` for shared code
 **Context.** Init interview, question 2. Two of the four audited projects had a two-tree layout with
 an install-order gotcha documented only inside a CI comment.
@@ -24,6 +83,7 @@ deploy.
 **Consequence.** `apps/` is empty until the first app lands, so `pnpm run dev` starts nothing yet.
 The source/dist split must be stated wherever it bites (it is, in `CLAUDE.md` and
 `vitest.config.ts`). Supersedes: none.
+_The source/dist paragraph is superseded by 2026-09-07 "Consume `@soccer/shared` as source"; the layout stands._
 
 ### 2026-09-07 — Pin pnpm 10.33.0 in `packageManager`
 **Context.** Init interview, question 3. The only audited project that pinned its manager never had
@@ -87,6 +147,7 @@ workflow that declares `needs: test`, and the runtime pin list in `CLAUDE.md` is
 **Rejected.** Picking one now to fill the placeholder: two audited projects' real deploy mechanism
 was recoverable only by inference, which is what a guessed answer would become.
 **Consequence.** The "Deploy target" row stays in the open-variants table below. Supersedes: none.
+_Superseded by 2026-09-07 "Host on Azure at the lowest tier of everything"._
 
 ### 2026-09-07 — Thin entry points in `apps/<app>/src/routes/`, logic in `lib/`, manual registration
 **Context.** Init interview, question 9. Both opinionated audited projects chose layer-per-folder
@@ -143,14 +204,8 @@ entry. Supersedes: none.
 ## Open variants
 
 Every row below is something all four audited projects needed and answered differently, or answered
-by accident. The **decide first** rows were settled on 2026-09-07 (entries above) except the one still listed. A row left unanswered becomes a convention by default, which is how most of these got their
+by accident. Every **decide first** row was settled on 2026-09-07 (entries above). A row left unanswered becomes a convention by default, which is how most of these got their
 current answers.
-
-### Decide first
-
-| Item | Options seen across the four projects | Recommended default | Why |
-|---|---|---|---|
-| Deploy target | Azure App Service via ACR Docker images; Azure Static Web Apps + Functions Flex; GitHub Pages + manual paste into a CMS; unknown / run-from-source `.bat` | Whatever it is, name it in `README.md` and make one workflow the only path to it | Two projects' real deploy mechanism was recoverable only by inference |
 
 ### Repo and code
 
@@ -173,7 +228,6 @@ current answers.
 | Local enforcement | None; none; none; none — all four honour-system | Git `pre-commit` running typecheck + lint + format; tests in the gate script and CI | Three friction logs asked for exactly this; keep the hook fast so nobody learns `--no-verify` |
 | What CI blocks | Nothing (no CI); CI on all branches after the fact; nothing; `test` job that both deploy jobs `need` | `test` job on every push, every deploy job `needs: test` | The `needs: test` shape is the only one that actually stops a bad deploy |
 | Which typechecks are in the gate | Per-package only, no root aggregate; root + a package relying on `next build`; n/a; API in the gate, web only in the deploy job | Every package, in the gate | A web-only type error failing the deploy job instead of the test job was named as a gap |
-| Real deps vs mocks | Real Postgres with an RLS guard refusing privileged roles; Azurite emulator, self-skipping locally; Azurite booted by the test itself; none | Emulator/real dependency, self-skipping when unconfigured | Both projects that mocked nothing caught the bugs that mattered |
 | Test fixtures | Sanitized workbooks committed with gitignore exceptions; none | Sanitized fixtures committed, format blocked globally | Otherwise the suite depends on files that exist on one machine |
 | LLM output evaluation | Manual comparison against client deliverables | Golden-answer harness from day one if the product ships model output | Named as missing; accuracy currently rests on one person's eyes |
 
@@ -196,10 +250,5 @@ current answers.
 |---|---|---|---|
 | Session/build-time tracking | Automated `SessionStart`/`SessionEnd` hook to an orphan branch; manual `TIMELOG.md` row per session; none; none | The automated hook | Two projects wanted the data; the manual one started months late and its earlier hours are unrecoverable estimates |
 | Claude Code commands/agents | None in any of the four | Ship `/gate`, `/ship`, `/decision`, `/preflight`; no subagents until a repeated review actually exists | Every repeated operation was "a remembered incantation" in all four |
-| Local emulator | Azurite as a devDependency with a connection-string fallback; Azurite in CI only; Docker Compose Postgres; none | Emulator as a devDependency with a fallback so a clone runs unconfigured | The only project where a fresh clone just worked |
-| IaC | Bicep, authored, never applied, live names differ | If it exists it is authoritative; if it is not, say so in line one of the file | The doc said "not yet applied" while the workflow was already deploying |
-| Auth model | Session + role CHECK + row-level security; JWT + magic links; none; Entra + a per-page gate object | Project-specific | Genuinely determined by the product |
-| Multi-tenancy | RLS with `SET LOCAL app.tenant_id`; tenant JSON file; none; partition-key-per-tenant | Enforce at the data layer, not the query site, when the database supports it | The RLS project could not leak across tenants even with a bug in a handler |
 | Dev/seed endpoint gate | Three-state `DEV_TOOLS` (`on`/`off`/environment-detected), endpoints 404 when off | Copy the three-state pattern | "Do not let a synthetic record touch a real tenant" needed three enforcement points before it stuck |
-| Side-effect integrations | SMTP + Teams webhooks behind a `*_LIVE` capture-vs-send flag; Resend; ACS email | Capture-vs-send flag, defaulting to capture | Both projects that send mail invented the same flag independently |
 | Committing the dependency manifest | Committed (three); `package.json` and lockfile deliberately gitignored | Commit it | The gitignored one was lost during a branch cleanup and rebuilt from memory |

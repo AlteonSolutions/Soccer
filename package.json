@@ -10,18 +10,23 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "setup": "node scripts/setup.mjs",
-    "dev": "pnpm -r --parallel --if-present run dev",
+    "dev": "concurrently -k -n storage,web -c blue,green \"pnpm run dev:storage\" \"pnpm --filter @soccer/web run dev\"",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm -r run typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
     "build": "pnpm -r --if-present run build",
-    "gate": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm test"
+    "gate": "pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm test",
+    "dev:storage": "azurite --silent --location .azurite --skipApiVersionCheck"
   },
   "devDependencies": {
+    "@azure/static-web-apps-cli": "^2.0.10",
     "@eslint/js": "^10.0.1",
     "@types/node": "^22.20.1",
+    "azurite": "^3.37.0",
+    "concurrently": "^10.0.5",
+    "esbuild": "^0.28.2",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.12.0",
@@ -33,6 +38,10 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
+    ],
+    "ignoredBuiltDependencies": [
+      "keytar",
+      "protobufjs"
     ]
   }
 }

@@ -30,15 +30,23 @@ required or has a default. Today every variable is optional. `.env` is gitignore
 `git config core.hooksPath .githooks` enables the pre-commit hook (typecheck + lint + format check).
 It is per-clone git config, which is why setup does it rather than the repo.
 
-## 6. Verify
+## 6. Azure Functions Core Tools
+
+`pnpm run dev` runs the API through the Static Web Apps CLI, which needs `func` on PATH. Setup
+checks and prints the install command (`npm install -g azure-functions-core-tools@4`, or winget on
+Windows). The gate does not need it.
+
+## 7. Verify
 
 `pnpm run gate` runs the full gate. It must pass on a fresh clone; if it does not, that is a bug in
-this repo, not in your machine — say so.
+this repo, not in your machine — say so. With Azurite running (`pnpm run dev:storage`) the gate also
+exercises the real Table Storage repo; without it that one test skips and says so.
 
-`pnpm run dev` starts every app's dev server. There is no app in `apps/` yet, so today it starts
-nothing; `STATUS.md` says what is next.
+`pnpm run dev` starts Azurite and the site on http://localhost:4280. `/login` opens the SWA CLI's
+fake sign-in: enter any name and add the role `admin` to reach `/admin.html`. Nothing here touches
+Azure, and no email is sent (`EMAIL_LIVE=off`; captured messages appear in the API log).
 
-## 7. Claude Code
+## 8. Claude Code
 
 Open Claude Code in the repo once. The `SessionStart` hook creates `.claude/sessions.csv` (gitignored)
 and a `worklog` branch that persists it. `bash .claude/hooks/session-log.sh report` shows the hours

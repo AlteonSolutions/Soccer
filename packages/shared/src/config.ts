@@ -17,11 +17,35 @@ import { z } from "zod";
 const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-    // 1–65535 is the valid TCP port range; 3000 is the conventional local dev port.
-    PORT: z.coerce.number().int().min(1).max(65535).default(3000),
     LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+
+    // Azure Table Storage. The default is Azurite's well-known local emulator string, so a fresh
+    // clone runs with no Azure account at all.
+    STORAGE_CONNECTION_STRING: z.string().min(1).default("UseDevelopmentStorage=true"),
+
+    // Azure Communication Services Email. Absent means every email is captured, never sent.
+    ACS_CONNECTION_STRING: z.string().min(1).optional(),
+    EMAIL_FROM: z.email().optional(),
+    // Capture-vs-send flag, defaulting to capture: both audited projects that send mail invented
+    // this flag independently after a test run emailed real people.
+    EMAIL_LIVE: z.enum(["on", "off"]).default("off"),
+    // Where "nobody has signed up for Saturday" nudges go. Optional: without it, no nudge is sent.
+    COACH_EMAIL: z.email().optional(),
+
+    // Reminders go out this many days before a game. 2 gives a parent one shopping day.
+    REMINDER_DAYS_AHEAD: z.coerce.number().int().min(0).max(14).default(2),
+    // Game dates are calendar dates in the team's zone; "today" is computed in it, not in UTC.
+    TIMEZONE: z.string().min(1).default("America/New_York"),
+
+    TEAM_NAME: z.string().trim().min(1).max(60).default("Our Team"),
+    // Used in emails as the link back to the site. 4280 is the SWA CLI's default local port.
+    SITE_URL: z.url().default("http://localhost:4280"),
   })
-  .strict();
+  .strict()
+  .refine((env) => env.EMAIL_LIVE === "off" || (env.ACS_CONNECTION_STRING && env.EMAIL_FROM), {
+    message: "EMAIL_LIVE=on requires ACS_CONNECTION_STRING and EMAIL_FROM",
+    path: ["EMAIL_LIVE"],
+  });
 
 export type Config = z.infer<typeof envSchema>;
 

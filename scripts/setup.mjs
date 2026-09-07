@@ -101,28 +101,25 @@ if (run("git", ["config", "core.hooksPath", ".githooks"])) {
   console.log("  Could not set hooks path. Run: git config core.hooksPath .githooks");
 }
 
-// 6. What to run next. There is no app in `apps/` yet, so `pnpm run dev` has nothing to start;
-//    say so rather than pretending a server came up.
-step("done");
-if (!existsSync(join(root, "apps")) || !hasWorkspaceApp()) {
+// 6. Azure Functions Core Tools: the SWA CLI runs the API through `func`. Not an npm dependency —
+//    it is a large native download and most Windows machines get it from winget or the MSI.
+step("Azure Functions Core Tools (func)");
+if (version("func") === undefined) {
   console.log(
-    "  No app exists in apps/ yet, so `pnpm run dev` starts nothing. Run `pnpm run gate` to verify the toolchain.",
+    "  `func` is not on PATH. `pnpm run gate` works without it; `pnpm run dev` needs it.",
+  );
+  console.log(
+    "  Install: npm install -g azure-functions-core-tools@4  (or winget install Microsoft.Azure.FunctionsCoreTools)",
   );
 } else {
-  console.log(
-    "  Run `pnpm run dev` to start the dev server, `pnpm run gate` before calling anything done.",
-  );
+  console.log(`  func ${version("func")} ok`);
 }
 
-function hasWorkspaceApp() {
-  const result = spawnSync(
-    "pnpm",
-    ["ls", "-r", "--depth", "-1", "--parseable", "--filter", "./apps/*"],
-    {
-      cwd: root,
-      encoding: "utf8",
-      shell: process.platform === "win32",
-    },
-  );
-  return result.status === 0 && result.stdout.trim().length > 0;
-}
+// 7. What to run next.
+step("done");
+console.log(
+  "  pnpm run dev   starts Azurite and the site on http://localhost:4280 (admin: http://localhost:4280/login)",
+);
+console.log(
+  "  pnpm run gate  typecheck, lint, format check, tests — run before calling anything done",
+);

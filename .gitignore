@@ -21,3 +21,8 @@ coverage/
 *.accdb
 *.bak
 !test/fixtures/*.csv
+
+# Local emulator state and Functions-host settings; both machine-local, never shared.
+.azurite/
+local.settings.json
+.swa/

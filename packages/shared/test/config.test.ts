@@ -3,18 +3,33 @@ import { z } from "zod";
 import { ConfigError, loadConfig, parseEnv } from "../src/config.js";
 
 describe("loadConfig", () => {
-  it("applies the documented defaults when nothing is set", () => {
-    expect(loadConfig({})).toEqual({ NODE_ENV: "development", PORT: 3000, LOG_LEVEL: "info" });
+  it("applies the documented defaults when nothing is set, so a fresh clone runs unconfigured", () => {
+    const config = loadConfig({});
+    expect(config.STORAGE_CONNECTION_STRING).toBe("UseDevelopmentStorage=true");
+    expect(config.EMAIL_LIVE).toBe("off");
+    expect(config.REMINDER_DAYS_AHEAD).toBe(2);
+    expect(config.TIMEZONE).toBe("America/New_York");
   });
 
   it("treats an empty value as unset rather than as the empty string", () => {
-    expect(loadConfig({ PORT: "" }).PORT).toBe(3000);
+    expect(loadConfig({ REMINDER_DAYS_AHEAD: "" }).REMINDER_DAYS_AHEAD).toBe(2);
   });
 
-  it("coerces PORT to a number and rejects one outside the TCP range by name", () => {
-    expect(loadConfig({ PORT: "8080" }).PORT).toBe(8080);
-    expect(() => loadConfig({ PORT: "70000" })).toThrow(ConfigError);
-    expect(() => loadConfig({ PORT: "70000" })).toThrow(/PORT/);
+  it("rejects a malformed value by variable name", () => {
+    expect(() => loadConfig({ REMINDER_DAYS_AHEAD: "30" })).toThrow(ConfigError);
+    expect(() => loadConfig({ REMINDER_DAYS_AHEAD: "30" })).toThrow(/REMINDER_DAYS_AHEAD/);
+    expect(() => loadConfig({ COACH_EMAIL: "not-an-address" })).toThrow(/COACH_EMAIL/);
+  });
+
+  it("refuses EMAIL_LIVE=on without the ACS connection string and sender", () => {
+    expect(() => loadConfig({ EMAIL_LIVE: "on" })).toThrow(/EMAIL_LIVE/);
+    expect(
+      loadConfig({
+        EMAIL_LIVE: "on",
+        ACS_CONNECTION_STRING: "endpoint=x;accesskey=y",
+        EMAIL_FROM: "a@b.co",
+      }).EMAIL_LIVE,
+    ).toBe("on");
   });
 
   it("ignores variables it does not declare, so the machine's environment never fails validation", () => {

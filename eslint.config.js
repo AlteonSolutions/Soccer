@@ -29,7 +29,9 @@ export default defineConfig([
     },
   },
   {
-    files: ["packages/shared/src/config.ts"],
+    // The config module reads env; the local dev launchers hand the whole environment to a child
+    // process (the Functions host) — neither is an app-code read.
+    files: ["packages/shared/src/config.ts", "apps/*/dev.mjs"],
     rules: { "no-restricted-properties": "off" },
   },
   prettier,

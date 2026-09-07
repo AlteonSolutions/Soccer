@@ -5,16 +5,21 @@ for parents.
 
 ## Facts
 
-- Node 22 is the only Node major here. It appears in `package.json` `engines`, in CI, and in none
-  (no IaC or `.nvmrc` exists yet; add any new runtime pin to this list). Those change in one commit
-  or not at all. `.npmrc` sets `engine-strict`, so the wrong major refuses to install.
+- Node 22 is the only Node major here. It appears in `package.json` `engines`, in CI, in
+  `infra/main.bicep` (`nodeMajor`) and in `apps/web/client/staticwebapp.config.json`
+  (`platform.apiRuntime`). Those change in one commit or not at all. `.npmrc` sets `engine-strict`,
+  so the wrong major refuses to install.
 - Package manager: pnpm 10.33.0, pinned in `packageManager`. Lockfile is committed; CI installs
   frozen. Do not install with another manager.
-- Layout: pnpm workspaces — `apps/*` for deployable apps, `packages/*` for shared libraries, one
-  lockfile at the root. No app exists in `apps/` yet.
+- Layout: pnpm workspaces — `apps/web` (Static Web App: `client/` + `api/`), `apps/reminders`
+  (timer Function App), `packages/shared`; one lockfile at the root. Each app's `build.mjs` bundles
+  it with esbuild into `dist/`; nothing is installed on the platform.
 - Shared types and schemas: `packages/shared` (`@soccer/shared`). Import them; never redeclare a
-  shape locally. Apps consume its build output (`dist`, via package `exports`); Vitest aliases it
-  to source. That split is deliberate — see `vitest.config.ts`.
+  shape locally. It is consumed as **source** by tsc, Vitest and esbuild alike; it has no build.
+  Browser code imports types only, from `@soccer/shared/schemas`.
+- Hosting: Azure, lowest tier — Static Web Apps Free, Table Storage, Communication Services Email,
+  a Consumption Function App for the timer. `infra/main.bicep` is the source of truth once applied;
+  its first line says whether it has been. Deploys run from `main` only, after the gate.
 - Module system: ESM `NodeNext`. Every relative import carries a `.js` extension, even from `.ts`
   source (`./config.js`, never `./config`). Nothing warns until runtime.
 - `pnpm run setup` on a fresh clone · `pnpm run dev` to work · `pnpm run gate` before saying
@@ -47,9 +52,11 @@ for parents.
   runtime), prefix every copied symbol with `_` and name the source file in a comment above the block.
 - When two similar things are deliberately *not* unified, say so in a comment at the site, or someone
   will "fix" it.
-- All data access goes through `withData()` in `packages/shared/src/data.ts` (not yet written — it
-  lands in the same commit as the first data store). The raw client/pool/handle is not exported and
-  is never called directly, including in tests and scripts.
+- All data access goes through `withData()` in `packages/shared/src/data.ts`. The raw
+  `TableClient` is not exported and is never called directly, including in tests and scripts.
+  Tests use `createMemoryRepo()`, which shares the `DataRepo` interface and deliberately not the code.
+- A parent's email address exists in `claimSchema` and the admin API only. `publicGameSchema` and
+  the public routes are typed so they cannot carry one; keep it that way.
 - Validate at every boundary with zod (`safeParse`, `.strict()` objects) and reject on failure.
   Payloads from our own UI are not trusted.
 - Errors carry a code and remediation text. Raw error to the logs, user-safe message to the UI.
@@ -82,9 +89,9 @@ for parents.
   If a package's typecheck isn't in the gate, it isn't checked until deploy — put it in the gate.
   `pnpm -r run typecheck` silently skips a package that has no `typecheck` script, so every new
   workspace package gets one in the commit that creates it.
-- Tests exercise source (`src/*.ts` imported directly; `@soccer/shared` is aliased to its source in
-  `vitest.config.ts`); the test script builds first when that is compiled output. Running the test
-  file directly after editing source tests the old build.
+- Tests exercise source (`src/*.ts` imported directly, `@soccer/shared` resolved to its source by
+  package `exports`); nothing builds before tests. The Table Storage repo is tested against Azurite
+  and that test skips itself, saying so, when the emulator is not running.
 - Test files mirror the source tree under `test/`. Fixtures are sanitized and committed; real
   customer data is not, in any format.
 - The failures worth testing are the quiet ones: a wrong number that still renders, a dropped tab

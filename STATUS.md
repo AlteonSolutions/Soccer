@@ -2,22 +2,38 @@
 
 _Written to be read cold. Update it in the same commit as the change it describes._
 
-## 2026-09-07 — Initialised from the Alteon template
+## 2026-09-07 — First app built, not yet deployed
 
-**What exists.** The toolchain and house rules, nothing else. pnpm workspaces with one package,
-`@soccer/shared`, containing the config module (`src/config.ts`) and its tests. ESLint flat +
-Prettier + Vitest + TypeScript wired into `pnpm run gate`, the pre-commit hook, and CI on every push.
-`pnpm run setup` takes a fresh clone to a passing gate.
+**What exists.** The whole first version, gated and tested, nothing in Azure yet.
 
-**What does not exist.** Any app. `apps/` is empty, so `pnpm run dev` starts nothing. No data
-store, so the data guard named in `CLAUDE.md` (`withData()` in `packages/shared/src/data.ts`) is
-not written yet. No deploy target. No email sending.
+- `apps/web` — the public schedule and sign-up page, the coach's admin page, and the HTTP API as
+  Azure Functions. Built into `dist/` by esbuild and deployed as one Static Web App (Free tier).
+- `apps/reminders` — a Consumption-plan Function App with one daily timer: reminder to the parent
+  on duty, nudge to the coach for unclaimed games.
+- `packages/shared` — schemas, config, the Table Storage data guard (`withData()`), email behind
+  the capture-vs-send flag, and the pure sign-up/reminder rules.
+- `infra/main.bicep` — every Azure resource, at the lowest tier. **Not yet applied.**
+- Specs: `docs/spec/snack-signup.md`, `docs/spec/reminder-emails.md`.
 
-**Next.** The first app in `apps/` — a web app with two features, in this order:
+**What is verified.** `pnpm run gate` passes: typecheck of every package, lint, format, 38 tests.
+The Table Storage repo round-trips against Azurite. Both Function Apps build to a single file.
 
-1. Snack sign-up: parents claim a game date for bringing snacks.
-2. Reminder emails: the parent on duty gets a reminder before the game. Sending goes behind a
-   capture-vs-send flag defaulting to capture (see `DECISIONS.md`, "Side-effect integrations") and
-   may never fail the primary action.
+**What is not verified, and how it gets verified.**
 
-Each feature gets a `docs/spec/<feature>.md` before code.
+- The Bicep has not been compiled or applied (no Azure CLI in the authoring environment). First
+  run: `docs/runbooks/first-deploy.md` step 2. Expect to fix an API version or property name.
+- The deploy workflow has never run (needs the secrets from that runbook, step 4).
+- The web app has not been run end to end through the SWA CLI here (Azure Functions Core Tools not
+  installed). `pnpm run dev` on a machine with `func` is the check.
+- Whether SWA's built-in Entra sign-in accepts a personal Microsoft account for the coach; if not,
+  the invitation in runbook step 6 still works with a work/school account, or add the `github`
+  provider.
+- `platform.apiRuntime: node:22` in `staticwebapp.config.json` is expected to be accepted by SWA.
+
+**Next.**
+
+1. Run the first-deploy runbook; fix whatever the Bicep needs; commit the fix with the first line of
+   the file changed to say it is applied.
+2. Add the custom domain and verify the email domain (runbook steps 7–8), then `EMAIL_LIVE=on`.
+3. After the first real season data: decide whether parents need to release their own slot (would
+   need a per-claim secret link in the confirmation email).

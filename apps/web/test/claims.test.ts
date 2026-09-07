@@ -28,15 +28,20 @@ describe("createClaim", () => {
   beforeEach(() => clearCapturedEmails());
 
   it("looks the player up on the team list, stores the claim with that email, and confirms to it", async () => {
-    const repo = createMemoryRepo({ games: [game()], roster: [member()] });
+    const repo = createMemoryRepo({
+      games: [game()],
+      roster: [member({ emails: ["sam@example.com", "dad@example.com"] })],
+    });
     const result = await createClaim(repo, { ...input, player: "leo rivera" }, ctx());
     expect(result.game.snack_by).toBe("Leo Rivera");
     expect(result.confirmation_sent).toBe(true);
     expect(JSON.stringify(result)).not.toContain("@");
     expect(JSON.stringify(result)).not.toContain("team_reminded_at");
-    expect(readCapturedEmails()).toHaveLength(1);
-    expect(readCapturedEmails()[0]?.to).toBe("sam@example.com");
-    expect((await repo.getClaim(game().id))?.email).toBe("sam@example.com");
+    expect(readCapturedEmails().map((e) => e.to)).toEqual(["sam@example.com", "dad@example.com"]);
+    expect((await repo.getClaim(game().id))?.emails).toEqual([
+      "sam@example.com",
+      "dad@example.com",
+    ]);
   });
 
   it("rejects a player who is not on the team list", async () => {
@@ -91,7 +96,7 @@ describe("getSchedule", () => {
     const repo = createMemoryRepo({
       games: [game()],
       claims: [claim()],
-      roster: [member(), member({ player: "Mia Chen", email: "chen@example.com" })],
+      roster: [member(), member({ player: "Mia Chen", emails: ["chen@example.com"] })],
     });
     const schedule = await getSchedule(repo, "Manchester City");
     expect(schedule.team_name).toBe("Manchester City");

@@ -23,7 +23,7 @@ describe("admin", () => {
     expect(added.id).toBe("2026-09-19-red-dragons");
     await repo.createClaim(claim());
     const rows = await listAdminGames(repo);
-    expect(rows[0]?.claim?.email).toBe("sam@example.com");
+    expect(rows[0]?.claim?.emails).toEqual(["sam@example.com"]);
   });
 
   it("removing a game removes its claim so no reminder can go out for it", async () => {
@@ -47,15 +47,15 @@ describe("admin", () => {
       repo,
       {
         members: [
-          { player: "Mia Chen", email: "chen@example.com" },
-          { player: "Leo Rivera", email: "old@example.com" },
-          { player: "leo rivera", email: "rivera@example.com" },
+          { player: "Mia Chen", emails: ["chen@example.com"] },
+          { player: "Leo Rivera", emails: ["old@example.com"] },
+          { player: "leo rivera", emails: ["rivera@example.com", "dad@example.com"] },
         ],
       },
       now,
     );
-    expect(members.map((m) => `${m.player} ${m.email}`)).toEqual([
-      "leo rivera rivera@example.com",
+    expect(members.map((m) => `${m.player} ${m.emails.join("+")}`)).toEqual([
+      "leo rivera rivera@example.com+dad@example.com",
       "Mia Chen chen@example.com",
     ]);
     await removeRosterMember(repo, "Leo Rivera");

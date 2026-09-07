@@ -51,7 +51,7 @@ describe("withData against Azurite", async () => {
       await withData((repo) => repo.markReminded(testGame.id, "2026-09-14T14:00:00.000Z"));
       const stored = await withData((repo) => repo.getClaim(testGame.id));
       expect(stored?.reminded_at).toBe("2026-09-14T14:00:00.000Z");
-      expect(stored?.email).toBe("sam@example.com");
+      expect(stored?.emails).toEqual(["sam@example.com"]);
 
       const games = await withData((repo) => repo.listGames());
       expect(games.some((g) => g.id === testGame.id)).toBe(true);
@@ -75,23 +75,23 @@ describe("withData against Azurite", async () => {
       try {
         await withData((repo) =>
           repo.addRosterMembers([
-            { player: odd, email: "odd@example.com", added_at },
-            { player: plain, email: "plain@example.com", added_at },
+            { player: odd, emails: ["odd@example.com"], added_at },
+            { player: plain, emails: ["plain@example.com"], added_at },
           ]),
         );
         await withData((repo) =>
           repo.addRosterMembers([
-            { player: plain.toUpperCase(), email: "corrected@example.com", added_at },
+            { player: plain.toUpperCase(), emails: ["corrected@example.com"], added_at },
           ]),
         );
-        expect((await withData((repo) => repo.getRosterMember(odd)))?.email).toBe(
+        expect((await withData((repo) => repo.getRosterMember(odd)))?.emails).toEqual([
           "odd@example.com",
-        );
-        expect((await withData((repo) => repo.getRosterMember(plain)))?.email).toBe(
+        ]);
+        expect((await withData((repo) => repo.getRosterMember(plain)))?.emails).toEqual([
           "corrected@example.com",
-        );
+        ]);
         const all = await withData((repo) => repo.listRoster());
-        expect(all.filter((m) => m.email === "corrected@example.com")).toHaveLength(1);
+        expect(all.filter((m) => m.emails.includes("corrected@example.com"))).toHaveLength(1);
       } finally {
         await withData((repo) => repo.removeRosterMember(odd));
         await withData((repo) => repo.removeRosterMember(plain));

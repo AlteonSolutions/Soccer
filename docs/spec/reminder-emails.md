@@ -10,17 +10,18 @@ the team's time zone (`TIMEZONE`):
 
 | Day | Email | To | Once per |
 |---|---|---|---|
-| Any | **Confirmation** — right after a sign-up. Sent by the web API. | the email on the team list for the chosen player | sign-up |
-| Monday | **Snack reminder** — "X's family is on snacks this week". | the family signed up for a game Mon–Sun | claim (`reminded_at`) |
+| Any | **Confirmation** — right after a sign-up. Sent by the web API. | every parent email on the team list for the chosen player | sign-up |
+| Monday | **Snack reminder** — "X's family is on snacks this week". | every parent email on the claim for a game Mon–Sun | claim (`reminded_at`) |
 | Monday | **Coach nudge** — a game this week has nobody. Only when `COACH_EMAIL` is set. | the coach | run |
-| Thursday | **Team reminder** — "game this Saturday vs …", naming the player whose family has snacks. | every distinct parent email on the team list, plus the snack family's if it is no longer there; one email each | game (`team_reminded_at`) |
+| Thursday | **Team reminder** — "game this Saturday vs …", naming the player whose family has snacks. | every distinct parent email across the team list, plus the snack claim's if no longer there; one email each | game (`team_reminded_at`) |
 
 Every email is plain text, from `EMAIL_FROM` on the verified domain, with the site URL at the end.
 
 ## The team list
 
 The coach keeps it on the admin page ("Team List"): one line per player, `Player Name,
-parent@example.com`; re-adding a player corrects the email; Remove takes a player off. Stored in the
+mom@example.com, dad@example.com` (up to four addresses); re-adding a player replaces their
+addresses; Remove takes a player off. Stored in the
 `roster` table, one row per player, never shown outside the admin page. It is also what the public
 sign-up picker offers (names only), so an empty list means nobody can sign up and Thursday's
 email goes to nobody; the admin page says so. Two players with the same parent email produce one
@@ -31,7 +32,8 @@ Thursday email, not two.
 - Each reminder goes out at most once per game. `reminded_at` (on the claim) and
   `team_reminded_at` (on the game) are the idempotency keys; the timer can run any number of times
   a day, on any day.
-- A failed snack reminder is not marked sent, so it is retried on the next Monday run. For the team
+- A snack reminder counts as sent once any of the claim's addresses accepts it; only if all of
+  them fail is it left unmarked and retried next Monday. For the team
   reminder, the game is marked sent after the whole list has been attempted: one bounced address
   must not re-send to everyone. Failures are logged as `team_reminder.failed`.
 - Email is a secondary side effect everywhere: no primary action (a sign-up, a game edit) can fail

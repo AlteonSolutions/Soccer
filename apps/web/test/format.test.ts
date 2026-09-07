@@ -21,18 +21,22 @@ describe("format", () => {
   });
 
   it("describes the snack slot by name only", () => {
-    expect(describeSnack({ snack_by: "The Nguyens" })).toBe("Snacks: The Nguyens");
+    expect(describeSnack({ snack_by: "Leo Rivera" })).toBe("Snacks: Leo Rivera");
     expect(describeSnack({ snack_by: null })).toBe("Snacks: nobody yet");
   });
 
-  it("parses 'Player Name, email' lines, splitting on the last comma, skipping junk", () => {
-    expect(
-      parseRosterLines(
-        "Leo Rivera, rivera@example.com\nRivera, Ana , ana@example.com\n\nno comma here\n, \n",
-      ),
-    ).toEqual([
-      { player: "Leo Rivera", email: "rivera@example.com" },
-      { player: "Rivera, Ana", email: "ana@example.com" },
+  it("parses 'Player, email, email' lines, keeping commas in names and every address", () => {
+    const pasted = [
+      "Leo Rivera, rivera@example.com, dad@example.com",
+      "Rivera, Ana , ana@example.com",
+      "",
+      "no email here",
+      ", ",
+      "only@example.com",
+    ].join("\n");
+    expect(parseRosterLines(pasted)).toEqual([
+      { player: "Leo Rivera", emails: ["rivera@example.com", "dad@example.com"] },
+      { player: "Rivera, Ana", emails: ["ana@example.com"] },
     ]);
   });
 });

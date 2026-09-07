@@ -50,16 +50,17 @@
       <section class="card">
         <h2>Team List</h2>
         <p class="hint">
-          Parents sign up by picking their player from this list. The player's email gets the
+          Parents sign up by picking their player from this list. The player's emails get the
           confirmation, the Monday snack reminder and the Thursday game reminder. One line per
-          player: <span class="mono">Player Name, parent@example.com</span>. Re-adding a player
-          corrects the email. Emails are never shown outside this page.
+          player, with as many parent emails as needed:
+          <span class="mono">Player Name, mom@example.com, dad@example.com</span>. Re-adding a
+          player replaces their emails. Emails are never shown outside this page.
         </p>
         <form id="add-roster" class="roster-form">
           <textarea
             name="lines"
             rows="4"
-            placeholder="Leo Rivera, rivera@example.com&#10;Mia Chen, chen@example.com"
+            placeholder="Leo Rivera, rivera@example.com, rivera2@example.com&#10;Mia Chen, chen@example.com"
             required
           ></textarea>
           <button type="submit" class="primary">Add To Team</button>

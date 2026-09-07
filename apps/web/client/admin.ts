@@ -58,7 +58,7 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   sub.className = "sub";
   sub.textContent = game.location;
   when.append(sub);
-  const email = cell(game.claim ? game.claim.email : "—");
+  const email = cell(game.claim ? game.claim.emails.join(", ") : "—");
   email.className = "mono";
   tr.append(when, cell(game.claim ? game.claim.player : "—"), email);
   const actions = document.createElement("td");
@@ -86,10 +86,10 @@ function renderMember(member: RosterMember): HTMLLIElement {
   const who = document.createElement("span");
   const name = document.createElement("strong");
   name.textContent = member.player;
-  const email = document.createElement("span");
-  email.className = "mono sub";
-  email.textContent = member.email;
-  who.append(name, email);
+  const emails = document.createElement("span");
+  emails.className = "mono sub";
+  emails.textContent = member.emails.join(" · ");
+  who.append(name, emails);
   li.append(
     who,
     actionButton("Remove", "danger", () =>
@@ -128,7 +128,10 @@ rosterForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const parsed = parseRosterLines(String(new FormData(rosterForm).get("lines") ?? ""));
   if (parsed.length === 0) {
-    setStatus("Each line needs a player name, a comma, then the parent's email.", true);
+    setStatus(
+      "Each line needs a player name, then one or more parent emails, separated by commas.",
+      true,
+    );
     return;
   }
   const submit = rosterForm.querySelector("button[type=submit]") as HTMLButtonElement;

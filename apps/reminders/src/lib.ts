@@ -2,10 +2,10 @@
  * The daily reminder run as a function of (repo, sendEmail, clock, config). Called by the timer
  * trigger in index.ts and directly by tests. The timer fires every day; this decides what the day
  * calls for:
- *   Monday   — the family on snacks for this week's game gets a reminder; the coach gets a nudge
- *              if a game this week has nobody (only when COACH_EMAIL is set).
- *   Thursday — every family on the team list gets a reminder about Saturday's game; the family on
- *              snacks is included even if their player has since left the list.
+ *   Monday   — every parent address on this week's snack claim gets a reminder; the coach gets a
+ *              nudge if a game this week has nobody (only when COACH_EMAIL is set).
+ *   Thursday — every parent address on the team list gets a reminder about Saturday's game; the
+ *              snack family's addresses are included even if their player has since left the list.
  * Rules it exists to enforce: each email goes out at most once per game (`reminded_at`,
  * `team_reminded_at`), and one failed send never stops the rest of the run.
  */
@@ -64,19 +64,33 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
   if (summary.day === "monday") {
     const [games, claims] = await Promise.all([repo.listGames(), repo.listClaims()]);
     for (const { game, claim } of selectSnackReminders(games, claims, ctx.today)) {
-      try {
-        await ctx.sendEmail({
-          to: claim.email,
-          ...reminderEmail(game, claim, ctx.teamName, ctx.siteUrl),
-        });
+      // Every address on the claim gets the reminder; the claim counts as reminded once any
+      // address accepts it, and is retried next Monday only if all of them failed.
+      const copy = reminderEmail(game, claim, ctx.teamName, ctx.siteUrl);
+      let delivered = 0;
+      for (const to of claim.emails) {
+        try {
+          await ctx.sendEmail({ to, ...copy });
+          delivered += 1;
+        } catch (error) {
+          ctx.log(
+            JSON.stringify({
+              event: "reminder.failed",
+              game_id: game.id,
+              to,
+              detail: String(error),
+            }),
+          );
+        }
+      }
+      if (delivered > 0) {
         await repo.markReminded(game.id, ctx.now.toISOString());
         summary.snack_reminders_sent += 1;
-        ctx.log(JSON.stringify({ event: "reminder.sent", game_id: game.id }));
-      } catch (error) {
-        summary.snack_reminders_failed += 1;
         ctx.log(
-          JSON.stringify({ event: "reminder.failed", game_id: game.id, detail: String(error) }),
+          JSON.stringify({ event: "reminder.sent", game_id: game.id, recipients: delivered }),
         );
+      } else {
+        summary.snack_reminders_failed += 1;
       }
     }
     const unclaimed = selectUnclaimed(games, claims, ctx.today);
@@ -104,8 +118,8 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
     for (const game of selectTeamReminders(games, ctx.today)) {
       const claim = claimByGame.get(game.id);
       const copy = teamReminderEmail(game, claim, ctx.teamName, ctx.siteUrl);
-      // One email per address, nobody sees anyone else's; the snack family is always on the list.
-      const recipients = [...new Set([...rosterEmails(roster), ...(claim ? [claim.email] : [])])];
+      // One email per address, nobody sees anyone else's; the snack family is always included.
+      const recipients = [...new Set([...rosterEmails(roster), ...(claim ? claim.emails : [])])];
       for (const to of recipients) {
         try {
           await ctx.sendEmail({ to, ...copy });
@@ -116,18 +130,19 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
             JSON.stringify({
               event: "team_reminder.failed",
               game_id: game.id,
+              to,
               detail: String(error),
             }),
           );
         }
       }
-      // Marked after the whole roster is attempted: one bounced address must not re-send to everyone.
+      // Marked after the whole list is attempted: one bounced address must not re-send to everyone.
       await repo.markTeamReminded(game.id, ctx.now.toISOString());
       ctx.log(
         JSON.stringify({
           event: "team_reminder.sent",
           game_id: game.id,
-          recipients: roster.length,
+          recipients: recipients.length,
         }),
       );
     }

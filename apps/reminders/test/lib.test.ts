@@ -25,9 +25,13 @@ function ctx(overrides: Partial<RunContext> = {}): RunContext {
 
 // Two players share one parent address: Thursday must email it once.
 const roster = [
-  { player: "Ann A", email: "a@example.com", added_at: "2026-09-01T00:00:00.000Z" },
-  { player: "Andy A", email: "a@example.com", added_at: "2026-09-01T00:00:00.000Z" },
-  { player: "Bea B", email: "b@example.com", added_at: "2026-09-01T00:00:00.000Z" },
+  { player: "Ann A", emails: ["a@example.com"], added_at: "2026-09-01T00:00:00.000Z" },
+  {
+    player: "Andy A",
+    emails: ["a@example.com", "a2@example.com"],
+    added_at: "2026-09-01T00:00:00.000Z",
+  },
+  { player: "Bea B", emails: ["b@example.com"], added_at: "2026-09-01T00:00:00.000Z" },
 ];
 
 const thursday = { today: "2026-09-17", now: new Date("2026-09-17T14:00:00Z") };
@@ -42,17 +46,20 @@ describe("runReminders", () => {
     expect(readCapturedEmails()).toHaveLength(0);
   });
 
-  it("Monday: reminds the snack family once, never again next Monday", async () => {
-    const repo = createMemoryRepo({ games: [game()], claims: [claim()], roster });
+  it("Monday: reminds every address on the snack claim once, never again next Monday", async () => {
+    const repo = createMemoryRepo({
+      games: [game()],
+      claims: [claim({ emails: ["sam@example.com", "dad@example.com"] })],
+      roster,
+    });
     const first = await runReminders(repo, ctx());
     expect(first.day).toBe("monday");
     expect(first.snack_reminders_sent).toBe(1);
-    expect(readCapturedEmails()[0]?.to).toBe("sam@example.com");
-    expect(readCapturedEmails()).toHaveLength(1); // nothing to the team on Monday
+    expect(readCapturedEmails().map((e) => e.to)).toEqual(["sam@example.com", "dad@example.com"]); // nothing to the team on Monday
 
     const again = await runReminders(repo, ctx({ now: new Date("2026-09-14T20:00:00Z") }));
     expect(again.snack_reminders_sent).toBe(0);
-    expect(readCapturedEmails()).toHaveLength(1);
+    expect(readCapturedEmails()).toHaveLength(2);
   });
 
   it("Monday: does not mark a claim reminded when the send fails, so it is retried", async () => {
@@ -79,9 +86,10 @@ describe("runReminders", () => {
     const repo = createMemoryRepo({ games: [game()], claims: [claim()], roster });
     const summary = await runReminders(repo, ctx(thursday));
     expect(summary.day).toBe("thursday");
-    expect(summary.team_reminders_sent).toBe(3);
+    expect(summary.team_reminders_sent).toBe(4);
     const sent = readCapturedEmails();
     expect(sent.map((e) => e.to).sort()).toEqual([
+      "a2@example.com",
       "a@example.com",
       "b@example.com",
       "sam@example.com",
@@ -95,7 +103,7 @@ describe("runReminders", () => {
       ctx({ ...thursday, now: new Date("2026-09-17T20:00:00Z") }),
     );
     expect(again.team_reminders_sent).toBe(0);
-    expect(readCapturedEmails()).toHaveLength(3);
+    expect(readCapturedEmails()).toHaveLength(4);
   });
 
   it("Thursday: one bad address does not stop the others or cause a re-send", async () => {
@@ -105,7 +113,7 @@ describe("runReminders", () => {
       return { mode: "captured", id: "x" };
     };
     const summary = await runReminders(repo, ctx({ ...thursday, sendEmail: flaky }));
-    expect(summary.team_reminders_sent).toBe(1);
+    expect(summary.team_reminders_sent).toBe(2);
     expect(summary.team_reminders_failed).toBe(1);
     expect((await repo.getGame(game().id))?.team_reminded_at).not.toBeNull();
   });

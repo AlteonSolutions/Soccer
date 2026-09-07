@@ -140,13 +140,17 @@ describe("gameIdFor", () => {
 describe("roster views", () => {
   it("exposes sorted player names and nothing else, and one email per parent", () => {
     const roster = [
-      member({ player: "Mia Chen", email: "chen@example.com" }),
+      member({ player: "Mia Chen", emails: ["chen@example.com", "chen2@example.com"] }),
       member(),
       member({ player: "Ana Rivera" }),
     ];
     expect(toPlayerNames(roster)).toEqual(["Ana Rivera", "Leo Rivera", "Mia Chen"]);
     expect(JSON.stringify(toPlayerNames(roster))).not.toContain("@");
-    expect(rosterEmails(roster)).toEqual(["chen@example.com", "sam@example.com"]);
+    expect(rosterEmails(roster)).toEqual([
+      "chen2@example.com",
+      "chen@example.com",
+      "sam@example.com",
+    ]);
   });
 });
 

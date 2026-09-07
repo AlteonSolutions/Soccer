@@ -16,7 +16,7 @@ export function claim(overrides: Partial<Claim> = {}): Claim {
   return {
     game_id: "2026-09-19-red-dragons",
     player: "Leo Rivera",
-    email: "sam@example.com",
+    emails: ["sam@example.com"],
     created_at: "2026-09-10T12:00:00.000Z",
     reminded_at: null,
     ...overrides,
@@ -26,7 +26,7 @@ export function claim(overrides: Partial<Claim> = {}): Claim {
 export function member(overrides: Partial<RosterMember> = {}): RosterMember {
   return {
     player: "Leo Rivera",
-    email: "sam@example.com",
+    emails: ["sam@example.com"],
     added_at: "2026-08-20T00:00:00.000Z",
     ...overrides,
   };

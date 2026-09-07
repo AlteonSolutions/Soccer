@@ -1,8 +1,9 @@
 /*
  * A parent signing up for a game's snack slot by picking their player from the team list. The
- * email comes from that list and is copied onto the claim, so the schedule never has to ask for
- * it. The primary action is the stored claim; the confirmation email is a secondary side effect
- * that may never fail it — a family whose confirmation bounced still has the slot.
+ * parent emails come from that list and are copied onto the claim, so the schedule never has to
+ * ask for them; every address gets the confirmation. The primary action is the stored claim; the
+ * confirmation email is a secondary side effect that may never fail it — a family whose
+ * confirmation bounced still has the slot.
  */
 import {
   AppError,
@@ -26,7 +27,7 @@ export interface ClaimContext {
 
 export interface ClaimResult {
   game: PublicGame;
-  /** Whether the confirmation email was captured or sent; false means it failed and was logged. */
+  /** Whether at least one confirmation was captured or sent; false means all failed and were logged. */
   confirmation_sent: boolean;
 }
 
@@ -64,28 +65,29 @@ export async function createClaim(
   const claim: Claim = {
     game_id: game.id,
     player: member.player,
-    email: member.email,
+    emails: member.emails,
     created_at: ctx.now.toISOString(),
     reminded_at: null,
   };
   await repo.createClaim(claim);
 
   let confirmationSent = false;
-  try {
-    await ctx.sendEmail({
-      to: claim.email,
-      ...confirmationEmail(game, claim, ctx.teamName, ctx.siteUrl),
-    });
-    confirmationSent = true;
-  } catch (error) {
-    // Secondary side effect: log and continue. The claim stands.
-    ctx.log(
-      JSON.stringify({
-        event: "claim.confirmation_failed",
-        game_id: game.id,
-        detail: String(error),
-      }),
-    );
+  const copy = confirmationEmail(game, claim, ctx.teamName, ctx.siteUrl);
+  for (const to of claim.emails) {
+    try {
+      await ctx.sendEmail({ to, ...copy });
+      confirmationSent = true;
+    } catch (error) {
+      // Secondary side effect: log and continue. The claim stands.
+      ctx.log(
+        JSON.stringify({
+          event: "claim.confirmation_failed",
+          game_id: game.id,
+          to,
+          detail: String(error),
+        }),
+      );
+    }
   }
 
   return {

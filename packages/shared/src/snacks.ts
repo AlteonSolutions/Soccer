@@ -83,7 +83,7 @@ export function toPlayerNames(roster: readonly RosterMember[]): string[] {
 
 /** Thursday's recipients: one email per address, however many players share a parent. */
 export function rosterEmails(roster: readonly RosterMember[]): string[] {
-  return [...new Set(roster.map((m) => m.email))].sort();
+  return [...new Set(roster.flatMap((m) => m.emails))].sort();
 }
 
 function inWindow(game: Pick<Game, "date">, today: string, days: number): boolean {

@@ -10,6 +10,8 @@
  *   games   partitionKey "game"   rowKey <game id>        columns = Game fields
  *   claims  partitionKey "claim"  rowKey <game id>        columns = Claim fields
  *   roster  partitionKey "member" rowKey <player, keyed>  columns = RosterMember fields
+ * Table Storage has no list column, so `emails` is stored as a JSON string in `emails_json` and
+ * unpacked here; nothing outside this file sees that column.
  * One claim per game is enforced by the row key: a second createEntity on the same key is a 409.
  * One roster row per player (case-insensitive); re-adding a player replaces the row, which is how
  * the coach corrects an email.
@@ -109,12 +111,34 @@ function toGame(entity: Record<string, unknown>): Game {
   return gameSchema.parse(pickColumns(entity, GAME_COLUMNS));
 }
 
+/** Pack the `emails` list into the `emails_json` column for storage. */
+function packEmails<T extends { emails: string[] }>(
+  record: T,
+): Omit<T, "emails"> & { emails_json: string } {
+  const { emails, ...rest } = record;
+  return { ...rest, emails_json: JSON.stringify(emails) };
+}
+
+/** Unpack `emails_json` back into `emails`; a malformed column fails schema validation, loudly. */
+function unpackEmails(entity: Record<string, unknown>): Record<string, unknown> {
+  const raw = entity["emails_json"];
+  let emails: unknown = undefined;
+  if (typeof raw === "string") {
+    try {
+      emails = JSON.parse(raw);
+    } catch {
+      emails = raw;
+    }
+  }
+  return { ...entity, emails };
+}
+
 function toClaim(entity: Record<string, unknown>): Claim {
-  return claimSchema.parse(pickColumns(entity, CLAIM_COLUMNS));
+  return claimSchema.parse(pickColumns(unpackEmails(entity), CLAIM_COLUMNS));
 }
 
 function toRosterMember(entity: Record<string, unknown>): RosterMember {
-  return rosterMemberSchema.parse(pickColumns(entity, ROSTER_COLUMNS));
+  return rosterMemberSchema.parse(pickColumns(unpackEmails(entity), ROSTER_COLUMNS));
 }
 
 function isNotFound(error: unknown): boolean {
@@ -176,7 +200,11 @@ const tableRepo: DataRepo = {
   async createClaim(claim) {
     const { claims } = await getClients();
     try {
-      await claims.createEntity({ partitionKey: CLAIM_PK, rowKey: claim.game_id, ...claim });
+      await claims.createEntity({
+        partitionKey: CLAIM_PK,
+        rowKey: claim.game_id,
+        ...packEmails(claim),
+      });
     } catch (error) {
       if (error instanceof RestError && error.statusCode === 409) {
         throw new AppError(
@@ -227,7 +255,7 @@ const tableRepo: DataRepo = {
     const { roster } = await getClients();
     for (const member of members) {
       await roster.upsertEntity(
-        { partitionKey: ROSTER_PK, rowKey: rosterKey(member.player), ...member },
+        { partitionKey: ROSTER_PK, rowKey: rosterKey(member.player), ...packEmails(member) },
         "Replace",
       );
     }

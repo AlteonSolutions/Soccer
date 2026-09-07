@@ -11,6 +11,8 @@ import { z } from "zod";
 // 1–60 characters: long enough for a double-barrelled name, short enough to fit a table cell.
 const playerName = z.string().trim().min(1).max(60);
 const emailAddress = z.email().trim().toLowerCase().max(254); // 254 is the RFC 5321 maximum
+// A player's parent emails: two parents plus two more caregivers is the most any family has asked for.
+const emailList = z.array(emailAddress).min(1).max(4);
 
 // YYYY-MM-DD-<slug>: sortable by date, readable in a URL.
 export const gameIdSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}-[a-z0-9]+(?:-[a-z0-9]+)*$/);
@@ -41,10 +43,10 @@ export const claimInputSchema = z
   .strict();
 export type ClaimInput = z.infer<typeof claimInputSchema>;
 
-/** A stored claim. `email` is copied from the team list at sign-up; it lives here and in the admin API only. */
+/** A stored claim. `emails` are copied from the team list at sign-up; they live here and in the admin API only. */
 export const claimSchema = claimInputSchema
   .extend({
-    email: emailAddress,
+    emails: emailList,
     created_at: z.iso.datetime(),
     // Table Storage cannot store null: an un-reminded claim has no column at all, so absent = null.
     reminded_at: z.iso.datetime().nullable().default(null),
@@ -69,21 +71,21 @@ export type ScheduleResponse = z.infer<typeof scheduleResponseSchema>;
 export const adminGameSchema = gameSchema.extend({ claim: claimSchema.nullable() }).strict();
 export type AdminGame = z.infer<typeof adminGameSchema>;
 
-/** A player on the team and the parent email behind them. Coach-managed; the email is never shown outside the admin page. */
+/** A player on the team and the parent emails behind them. Coach-managed; the email is never shown outside the admin page. */
 export const rosterMemberSchema = z
   .object({
     player: playerName,
-    email: emailAddress,
+    emails: emailList,
     added_at: z.iso.datetime(),
   })
   .strict();
 export type RosterMember = z.infer<typeof rosterMemberSchema>;
 
-/** Bulk add or correct: the coach pastes "Player Name, parent@example.com" lines. 100 is far above any youth team. */
+/** Bulk add or correct: the coach pastes "Player Name, parent@example.com, other@example.com" lines. 100 is far above any youth team. */
 export const rosterInputSchema = z
   .object({
     members: z
-      .array(z.object({ player: playerName, email: emailAddress }).strict())
+      .array(z.object({ player: playerName, emails: emailList }).strict())
       .min(1)
       .max(100),
   })

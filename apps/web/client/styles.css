@@ -1,0 +1,497 @@
+/* Team colors: sky blue, navy and white, with a warm accent for "open" slots. Change these five
+   variables and the whole site follows. */
+:root {
+  --sky: #6cabdd;
+  --sky-deep: #3b86c4;
+  --sky-tint: #eaf4fb;
+  --navy: #1c2c5b;
+  --navy-deep: #12203f;
+  --gold: #f2c14e;
+  --ink: #16213a;
+  --muted: #5f6b85;
+  --line: #dfe7f1;
+  --paper: #ffffff;
+  --ground: #f3f7fb;
+  --danger: #b3261e;
+  --radius: 18px;
+  --shadow: 0 1px 2px rgba(18, 32, 63, 0.06), 0 10px 30px -12px rgba(18, 32, 63, 0.18);
+}
+* {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  font:
+    16px/1.55 system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    sans-serif;
+  color: var(--ink);
+  background: var(--ground);
+}
+a {
+  color: inherit;
+}
+
+/* Header: hero band in the club's sky blue, badge on the left. */
+.hero {
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 55%),
+    linear-gradient(135deg, var(--sky) 0%, var(--sky-deep) 100%);
+  color: #fff;
+  padding: 2.25rem 1rem 2.75rem;
+  position: relative;
+  overflow: hidden;
+}
+.hero::after {
+  /* Faint pitch lines for texture. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px) 0 0 / 100% 48px,
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 1px, transparent 1px) 0 0 / 48px 100%;
+  pointer-events: none;
+}
+.hero .wrap {
+  position: relative;
+  max-width: 60rem;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+.hero .badge {
+  width: 84px;
+  height: 84px;
+  flex: none;
+  filter: drop-shadow(0 6px 14px rgba(18, 32, 63, 0.35));
+}
+.hero .eyebrow {
+  margin: 0;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.9;
+  font-weight: 600;
+}
+.hero h1 {
+  margin: 0.1rem 0 0.25rem;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1.1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.hero p {
+  margin: 0;
+  opacity: 0.92;
+  max-width: 40rem;
+}
+.hero nav {
+  margin-top: 0.6rem;
+  display: flex;
+  gap: 0.35rem 1rem;
+  flex-wrap: wrap;
+  font-size: 0.95rem;
+}
+.hero nav a {
+  color: #fff;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+}
+.hero nav a:hover {
+  border-bottom-color: #fff;
+}
+
+main {
+  max-width: 60rem;
+  margin: -1.5rem auto 0;
+  padding: 0 1rem 4rem;
+  position: relative;
+}
+
+.status {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--navy);
+  box-shadow: var(--shadow);
+  font-weight: 500;
+}
+.status:empty {
+  display: none;
+}
+.status.error {
+  color: var(--danger);
+  background: #fff3f2;
+}
+
+/* Game cards */
+.games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+.game {
+  background: var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.1rem 1.25rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.5rem 1.1rem;
+  align-items: center;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.game:hover {
+  transform: translateY(-1px);
+}
+/* Past games stay opaque (they overlap the header band) but recede: muted tile, muted text. */
+.game.past h2,
+.game.past .meta {
+  color: var(--muted);
+}
+.game.past .date-tile {
+  background: #8b95ad;
+}
+.date-tile {
+  width: 64px;
+  border-radius: 14px;
+  background: var(--navy);
+  color: #fff;
+  text-align: center;
+  padding: 0.45rem 0 0.55rem;
+  line-height: 1.05;
+  align-self: start;
+}
+.date-tile .month {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.date-tile .day {
+  display: block;
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.date-tile .weekday {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-top: 0.15rem;
+}
+.game h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.game .meta {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.9rem;
+}
+.snack {
+  justify-self: end;
+  text-align: right;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pill::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.pill.taken {
+  background: var(--sky-tint);
+  color: var(--navy);
+}
+.pill.played {
+  background: #eef1f6;
+  color: var(--muted);
+}
+
+button,
+.button {
+  font: inherit;
+  font-weight: 650;
+  padding: 0.6rem 1.1rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--navy);
+  background: var(--navy);
+  color: #fff;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
+  box-shadow: 0 6px 16px -8px rgba(28, 44, 91, 0.6);
+}
+button:hover {
+  background: var(--navy-deep);
+}
+button:active {
+  transform: translateY(1px);
+}
+button.primary {
+  background: var(--sky-deep);
+  border-color: var(--sky-deep);
+}
+button.primary:hover {
+  background: #2f74ae;
+}
+button.secondary {
+  background: var(--paper);
+  color: var(--navy);
+  box-shadow: none;
+}
+button.secondary:hover {
+  background: var(--sky-tint);
+}
+button.danger {
+  background: var(--paper);
+  color: var(--danger);
+  border-color: #e6b8b4;
+  box-shadow: none;
+}
+button.danger:hover {
+  background: #fff3f2;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+/* Inline sign-up form */
+form.claim {
+  grid-column: 1 / -1;
+  margin-top: 0.75rem;
+  padding: 1rem 1.1rem;
+  background: var(--sky-tint);
+  border-radius: 14px;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr;
+}
+form.claim label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+form.claim input,
+form.claim select,
+.admin-form input {
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+}
+form.claim input:focus,
+form.claim select:focus,
+.admin-form input:focus {
+  outline: none;
+  border-color: var(--sky-deep);
+  box-shadow: 0 0 0 3px rgba(108, 171, 221, 0.35);
+}
+form.claim .confirm {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  background: var(--paper);
+  border-left: 3px solid var(--sky-deep);
+  border-radius: 8px;
+  font-weight: 600;
+  color: var(--navy);
+}
+form.claim .privacy {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+form.claim .actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 0.6rem;
+}
+
+/* Admin */
+.card {
+  background: var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.card h2 {
+  margin: 0 0 0.9rem;
+  font-size: 1.1rem;
+  letter-spacing: -0.01em;
+}
+.admin-form {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  align-items: end;
+}
+.admin-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+.table-wrap {
+  overflow-x: auto;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 40rem;
+}
+th {
+  text-align: left;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0.4rem 0.6rem;
+}
+td {
+  padding: 0.8rem 0.6rem;
+  border-top: 1px solid var(--line);
+  vertical-align: middle;
+}
+td.actions {
+  white-space: nowrap;
+  text-align: right;
+}
+td.actions button {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.9rem;
+  margin-left: 0.35rem;
+}
+td .sub {
+  display: block;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+}
+
+footer {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  padding: 1rem;
+}
+
+.hint {
+  margin: -0.4rem 0 0.9rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.roster-form {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  margin-bottom: 1rem;
+}
+.roster-form textarea {
+  font: inherit;
+  width: 100%;
+  min-height: 5.5rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  resize: vertical;
+}
+.roster-form textarea:focus {
+  outline: none;
+  border-color: var(--sky-deep);
+  box-shadow: 0 0 0 3px rgba(108, 171, 221, 0.35);
+}
+.roster {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.roster li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.55rem 0.6rem;
+  border-top: 1px solid var(--line);
+}
+.roster li strong {
+  display: block;
+}
+.roster li.empty {
+  color: var(--muted);
+  border: 0;
+}
+.roster li button {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .hero {
+    padding: 1.5rem 1rem 2.25rem;
+  }
+  .hero .badge {
+    width: 64px;
+    height: 64px;
+  }
+  .game {
+    grid-template-columns: auto 1fr;
+  }
+  .snack {
+    grid-column: 1 / -1;
+    justify-self: start;
+    text-align: left;
+  }
+  form.claim {
+    grid-template-columns: 1fr;
+  }
+  .roster-form {
+    grid-template-columns: 1fr;
+  }
+}

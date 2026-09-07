@@ -1,0 +1,17 @@
+{
+  "name": "@soccer/reminders",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Timer-triggered Azure Function App that sends snack reminder emails. Separate from the web app because Static Web Apps Free runs HTTP triggers only.",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "pnpm run build && node dev.mjs",
+    "start": "node dev.mjs"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.16.2",
+    "@soccer/shared": "workspace:*"
+  }
+}

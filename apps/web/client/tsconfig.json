@@ -1,0 +1,12 @@
+{
+  // Typecheck only; esbuild bundles app.ts and admin.ts into dist/client (see ../build.mjs).
+  // Browser code: DOM lib, no Node types. Imports from @soccer/shared are type-only and come from
+  // "@soccer/shared/schemas", which depends on nothing Node-specific.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": []
+  },
+  "include": ["**/*.ts"]
+}

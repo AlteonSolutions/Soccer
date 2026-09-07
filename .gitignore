@@ -5,9 +5,12 @@ coverage/
 *.log
 *.tsbuildinfo
 
-# Claude Code
-.claude/settings.local.json   # per-machine permissions; never shared
-.claude/sessions.csv          # restored from the `worklog` branch by the SessionStart hook
+# Claude Code. Comments stay on their own line: git treats a trailing "# …" as part of the pattern,
+# and the template's inline comments silently un-ignored settings.local.json.
+# per-machine permissions; never shared
+.claude/settings.local.json
+# restored from the `worklog` branch by the SessionStart hook
+.claude/sessions.csv
 
 # Customer data — blocked by format, sanitized fixtures whitelisted below by exception.
 # Add a `!test/fixtures/<file>` line per fixture, never a blanket un-ignore.
@@ -18,3 +21,8 @@ coverage/
 *.accdb
 *.bak
 !test/fixtures/*.csv
+
+# Local emulator state and Functions-host settings; both machine-local, never shared.
+.azurite/
+local.settings.json
+.swa/

@@ -1,0 +1,6 @@
+{
+  // Typecheck only. Nothing emits from this package: apps bundle its source with esbuild.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "noEmit": true },
+  "include": ["src", "test"]
+}

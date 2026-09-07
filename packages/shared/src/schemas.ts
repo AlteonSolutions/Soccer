@@ -43,10 +43,9 @@ export const claimInputSchema = z
   .strict();
 export type ClaimInput = z.infer<typeof claimInputSchema>;
 
-/** A stored claim. `emails` are copied from the team list at sign-up; they live here and in the admin API only. */
+/** A stored claim: which player, when. No email lives here — addresses are looked up on the team list at send time. */
 export const claimSchema = claimInputSchema
   .extend({
-    emails: emailList,
     created_at: z.iso.datetime(),
     // Table Storage cannot store null: an un-reminded claim has no column at all, so absent = null.
     reminded_at: z.iso.datetime().nullable().default(null),
@@ -67,8 +66,10 @@ export const scheduleResponseSchema = z
   .strict();
 export type ScheduleResponse = z.infer<typeof scheduleResponseSchema>;
 
-/** The coach's view: games joined with full claims, emails included. */
-export const adminGameSchema = gameSchema.extend({ claim: claimSchema.nullable() }).strict();
+/** The coach's view: games joined with their claim and the current parent emails for that player. */
+export const adminGameSchema = gameSchema
+  .extend({ claim: claimSchema.nullable(), emails: z.array(emailAddress) })
+  .strict();
 export type AdminGame = z.infer<typeof adminGameSchema>;
 
 /** A player on the team and the parent emails behind them. Coach-managed; the email is never shown outside the admin page. */

@@ -17,7 +17,7 @@ describe("createMemoryRepo", () => {
     const repo = createMemoryRepo({ games: [game()], claims: [claim()] });
     await repo.markReminded(claim().game_id, "2026-09-14T14:00:00.000Z");
     await repo.markTeamReminded(game().id, "2026-09-17T14:00:00.000Z");
-    expect((await repo.getClaim(claim().game_id))?.emails).toEqual(["sam@example.com"]);
+    expect((await repo.getClaim(claim().game_id))?.player).toBe("Leo Rivera");
     expect((await repo.getGame(game().id))?.team_reminded_at).toBe("2026-09-17T14:00:00.000Z");
   });
 

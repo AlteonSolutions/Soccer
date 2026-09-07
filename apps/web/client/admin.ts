@@ -58,7 +58,7 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   sub.className = "sub";
   sub.textContent = game.location;
   when.append(sub);
-  const email = cell(game.claim ? game.claim.emails.join(", ") : "—");
+  const email = cell(game.claim ? game.emails.join(", ") || "not on the team list" : "—");
   email.className = "mono";
   tr.append(when, cell(game.claim ? game.claim.player : "—"), email);
   const actions = document.createElement("td");

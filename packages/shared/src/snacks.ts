@@ -81,6 +81,12 @@ export function toPlayerNames(roster: readonly RosterMember[]): string[] {
   return roster.map((m) => m.player).sort((a, b) => a.localeCompare(b));
 }
 
+/** The addresses for one player, looked up on the team list at send time; [] if they left the team. */
+export function emailsForPlayer(roster: readonly RosterMember[], player: string): string[] {
+  const key = player.trim().toLowerCase();
+  return roster.find((m) => m.player.trim().toLowerCase() === key)?.emails ?? [];
+}
+
 /** Thursday's recipients: one email per address, however many players share a parent. */
 export function rosterEmails(roster: readonly RosterMember[]): string[] {
   return [...new Set(roster.flatMap((m) => m.emails))].sort();

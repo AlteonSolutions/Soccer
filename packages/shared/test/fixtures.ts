@@ -16,7 +16,6 @@ export function claim(overrides: Partial<Claim> = {}): Claim {
   return {
     game_id: "2026-09-19-red-dragons",
     player: "Leo Rivera",
-    emails: ["sam@example.com"],
     created_at: "2026-09-10T12:00:00.000Z",
     reminded_at: null,
     ...overrides,

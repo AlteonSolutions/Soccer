@@ -2,14 +2,15 @@
  * The daily reminder run as a function of (repo, sendEmail, clock, config). Called by the timer
  * trigger in index.ts and directly by tests. The timer fires every day; this decides what the day
  * calls for:
- *   Monday   — every parent address on this week's snack claim gets a reminder; the coach gets a
- *              nudge if a game this week has nobody (only when COACH_EMAIL is set).
- *   Thursday — every parent address on the team list gets a reminder about Saturday's game; the
- *              snack family's addresses are included even if their player has since left the list.
+ *   Monday   — the family on this week's snack claim gets a reminder, at the addresses on the team
+ *              list for that player as of today; the coach gets a nudge if a game this week has
+ *              nobody (only when COACH_EMAIL is set).
+ *   Thursday — every parent address on the team list gets a reminder about Saturday's game.
  * Rules it exists to enforce: each email goes out at most once per game (`reminded_at`,
  * `team_reminded_at`), and one failed send never stops the rest of the run.
  */
 import {
+  emailsForPlayer,
   reminderEmail,
   rosterEmails,
   selectSnackReminders,
@@ -62,13 +63,30 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
   };
 
   if (summary.day === "monday") {
-    const [games, claims] = await Promise.all([repo.listGames(), repo.listClaims()]);
+    const [games, claims, roster] = await Promise.all([
+      repo.listGames(),
+      repo.listClaims(),
+      repo.listRoster(),
+    ]);
     for (const { game, claim } of selectSnackReminders(games, claims, ctx.today)) {
-      // Every address on the claim gets the reminder; the claim counts as reminded once any
-      // address accepts it, and is retried next Monday only if all of them failed.
+      // Addresses are read from the team list now, not at sign-up, so a corrected email counts.
+      // The claim counts as reminded once any address accepts it, and is retried next Monday
+      // only if every address failed (or the player is no longer on the list).
+      const recipients = emailsForPlayer(roster, claim.player);
+      if (recipients.length === 0) {
+        summary.snack_reminders_failed += 1;
+        ctx.log(
+          JSON.stringify({
+            event: "reminder.no_recipient",
+            game_id: game.id,
+            player: claim.player,
+          }),
+        );
+        continue;
+      }
       const copy = reminderEmail(game, claim, ctx.teamName, ctx.siteUrl);
       let delivered = 0;
-      for (const to of claim.emails) {
+      for (const to of recipients) {
         try {
           await ctx.sendEmail({ to, ...copy });
           delivered += 1;
@@ -118,8 +136,8 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
     for (const game of selectTeamReminders(games, ctx.today)) {
       const claim = claimByGame.get(game.id);
       const copy = teamReminderEmail(game, claim, ctx.teamName, ctx.siteUrl);
-      // One email per address, nobody sees anyone else's; the snack family is always included.
-      const recipients = [...new Set([...rosterEmails(roster), ...(claim ? claim.emails : [])])];
+      // One email per address, nobody sees anyone else's. The snack family is on the list too.
+      const recipients = rosterEmails(roster);
       for (const to of recipients) {
         try {
           await ctx.sendEmail({ to, ...copy });

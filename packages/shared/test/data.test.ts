@@ -51,7 +51,7 @@ describe("withData against Azurite", async () => {
       await withData((repo) => repo.markReminded(testGame.id, "2026-09-14T14:00:00.000Z"));
       const stored = await withData((repo) => repo.getClaim(testGame.id));
       expect(stored?.reminded_at).toBe("2026-09-14T14:00:00.000Z");
-      expect(stored?.emails).toEqual(["sam@example.com"]);
+      expect(stored?.player).toBe("Leo Rivera");
 
       const games = await withData((repo) => repo.listGames());
       expect(games.some((g) => g.id === testGame.id)).toBe(true);

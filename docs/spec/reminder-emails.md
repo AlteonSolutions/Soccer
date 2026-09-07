@@ -11,9 +11,9 @@ the team's time zone (`TIMEZONE`):
 | Day | Email | To | Once per |
 |---|---|---|---|
 | Any | **Confirmation** — right after a sign-up. Sent by the web API. | every parent email on the team list for the chosen player | sign-up |
-| Monday | **Snack reminder** — "X's family is on snacks this week". | every parent email on the claim for a game Mon–Sun | claim (`reminded_at`) |
+| Monday | **Snack reminder** — "X's family is on snacks this week". | every parent email on the team list for the claimed player, read that morning | claim (`reminded_at`) |
 | Monday | **Coach nudge** — a game this week has nobody. Only when `COACH_EMAIL` is set. | the coach | run |
-| Thursday | **Team reminder** — "game this Saturday vs …", naming the player whose family has snacks. | every distinct parent email across the team list, plus the snack claim's if no longer there; one email each | game (`team_reminded_at`) |
+| Thursday | **Team reminder** — "game this Saturday vs …", naming the player whose family has snacks. | every distinct parent email across the team list; one email each | game (`team_reminded_at`) |
 
 Every email is plain text, from `EMAIL_FROM` on the verified domain, with the site URL at the end.
 
@@ -32,8 +32,11 @@ Thursday email, not two.
 - Each reminder goes out at most once per game. `reminded_at` (on the claim) and
   `team_reminded_at` (on the game) are the idempotency keys; the timer can run any number of times
   a day, on any day.
-- A snack reminder counts as sent once any of the claim's addresses accepts it; only if all of
-  them fail is it left unmarked and retried next Monday. For the team
+- Addresses are never copied onto a claim: each send looks the player up on the team list at
+  that moment. A snack reminder counts as sent once any of the player's addresses accepts it;
+  only if all of them fail is it left unmarked and retried next Monday. A claimed player who has
+  been removed from the team list gets nothing and is logged as `reminder.no_recipient` so the
+  coach can see it in Application Insights. For the team
   reminder, the game is marked sent after the whole list has been attempted: one bounced address
   must not re-send to everyone. Failures are logged as `team_reminder.failed`.
 - Email is a secondary side effect everywhere: no primary action (a sign-up, a game edit) can fail

@@ -8,11 +8,13 @@ import {
   removeGame,
   removeRosterMember,
 } from "../api/src/lib/admin.js";
-import { claim, game } from "../../../packages/shared/test/fixtures.js";
+import { claim, game, member } from "../../../packages/shared/test/fixtures.js";
 
 describe("admin", () => {
-  it("adds a game with a derived id and lists it with its claim, email included", async () => {
-    const repo = createMemoryRepo();
+  it("adds a game with a derived id and lists it with its claim and the current team-list emails", async () => {
+    const repo = createMemoryRepo({
+      roster: [member({ emails: ["sam@example.com", "dad@example.com"] })],
+    });
     const added = await addGame(repo, {
       date: "2026-09-19",
       kickoff: "10:00",
@@ -23,7 +25,8 @@ describe("admin", () => {
     expect(added.id).toBe("2026-09-19-red-dragons");
     await repo.createClaim(claim());
     const rows = await listAdminGames(repo);
-    expect(rows[0]?.claim?.emails).toEqual(["sam@example.com"]);
+    expect(rows[0]?.claim?.player).toBe("Leo Rivera");
+    expect(rows[0]?.emails).toEqual(["sam@example.com", "dad@example.com"]);
   });
 
   it("removing a game removes its claim so no reminder can go out for it", async () => {

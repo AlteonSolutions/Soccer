@@ -3,6 +3,7 @@
  * function here is reached only through a route that has passed `requireAdmin`.
  */
 import {
+  emailsForPlayer,
   gameIdFor,
   sortByDate,
   type AdminGame,
@@ -14,9 +15,16 @@ import {
 } from "@soccer/shared";
 
 export async function listAdminGames(repo: DataRepo): Promise<AdminGame[]> {
-  const [games, claims] = await Promise.all([repo.listGames(), repo.listClaims()]);
+  const [games, claims, roster] = await Promise.all([
+    repo.listGames(),
+    repo.listClaims(),
+    repo.listRoster(),
+  ]);
   const byGame = new Map(claims.map((c) => [c.game_id, c]));
-  return sortByDate(games).map((game) => ({ ...game, claim: byGame.get(game.id) ?? null }));
+  return sortByDate(games).map((game) => {
+    const claim = byGame.get(game.id) ?? null;
+    return { ...game, claim, emails: claim ? emailsForPlayer(roster, claim.player) : [] };
+  });
 }
 
 export async function addGame(repo: DataRepo, input: NewGameInput): Promise<Game> {

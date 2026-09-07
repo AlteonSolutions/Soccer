@@ -1,7 +1,7 @@
 /*
  * A parent signing up for a game's snack slot by picking their player from the team list. The
- * parent emails come from that list and are copied onto the claim, so the schedule never has to
- * ask for them; every address gets the confirmation. The primary action is the stored claim; the
+ * claim records the player only; the parent emails are read from the team list whenever an email
+ * is sent (here, and by the Monday timer), so a corrected address is used everywhere at once. The primary action is the stored claim; the
  * confirmation email is a secondary side effect that may never fail it — a family whose
  * confirmation bounced still has the slot.
  */
@@ -65,7 +65,6 @@ export async function createClaim(
   const claim: Claim = {
     game_id: game.id,
     player: member.player,
-    emails: member.emails,
     created_at: ctx.now.toISOString(),
     reminded_at: null,
   };
@@ -73,7 +72,7 @@ export async function createClaim(
 
   let confirmationSent = false;
   const copy = confirmationEmail(game, claim, ctx.teamName, ctx.siteUrl);
-  for (const to of claim.emails) {
+  for (const to of member.emails) {
     try {
       await ctx.sendEmail({ to, ...copy });
       confirmationSent = true;

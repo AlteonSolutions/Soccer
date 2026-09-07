@@ -14,9 +14,11 @@ and confirming. No email is typed anywhere on the public site.
 
 - One family per game. The first sign-up wins; a second attempt is told "Someone else just signed
   up for this game" and the page refreshes to show who.
-- A sign-up names a player. The server looks the player up on the team list (case-insensitive)
-  and copies every parent email onto the claim; a name not on the list is rejected. Emails added
-  to the list later do not change an existing claim; Release Slot and re-sign-up does. The browser only
+- A sign-up names a player. The server checks the player is on the team list (case-insensitive);
+  a name not on the list is rejected. The claim stores the player only. Every email — the
+  confirmation, Monday's reminder, Thursday's reminder — reads the addresses from the team list
+  at the moment it is sent, so correcting a parent's email on the admin page takes effect for
+  every future email at once. The browser only
   offers names from the list and asks "Sign up X's family … ?" before submitting.
 - We assume nobody signs up another family's player. The confirm step and the coach's Release
   Slot are the guard; a per-family secret link would be the next step if that assumption fails.
@@ -71,4 +73,4 @@ the four characters Table Storage forbids in keys mapped to `_`), columns player
 added_at. Table Storage has no list column, so `emails` is a JSON string on disk and a `string[]`
 everywhere else; only `data.ts` knows. `games`: partition `game`, row key = game id (`YYYY-MM-DD-opponent-slug`).
 `claims`: partition `claim`, row key = game id, which is what enforces one sign-up per game;
-columns player, emails_json (copied from the roster at sign-up), created_at, reminded_at.
+columns player, created_at, reminded_at. No email is stored on a claim.

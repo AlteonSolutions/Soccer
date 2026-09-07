@@ -10,8 +10,8 @@
  *   games   partitionKey "game"   rowKey <game id>        columns = Game fields
  *   claims  partitionKey "claim"  rowKey <game id>        columns = Claim fields
  *   roster  partitionKey "member" rowKey <player, keyed>  columns = RosterMember fields
- * Table Storage has no list column, so `emails` is stored as a JSON string in `emails_json` and
- * unpacked here; nothing outside this file sees that column.
+ * Table Storage has no list column, so a roster row's `emails` is stored as a JSON string in
+ * `emails_json` and unpacked here; nothing outside this file sees that column.
  * One claim per game is enforced by the row key: a second createEntity on the same key is a 409.
  * One roster row per player (case-insensitive); re-adding a player replaces the row, which is how
  * the coach corrects an email.
@@ -134,7 +134,7 @@ function unpackEmails(entity: Record<string, unknown>): Record<string, unknown> 
 }
 
 function toClaim(entity: Record<string, unknown>): Claim {
-  return claimSchema.parse(pickColumns(unpackEmails(entity), CLAIM_COLUMNS));
+  return claimSchema.parse(pickColumns(entity, CLAIM_COLUMNS));
 }
 
 function toRosterMember(entity: Record<string, unknown>): RosterMember {
@@ -200,11 +200,7 @@ const tableRepo: DataRepo = {
   async createClaim(claim) {
     const { claims } = await getClients();
     try {
-      await claims.createEntity({
-        partitionKey: CLAIM_PK,
-        rowKey: claim.game_id,
-        ...packEmails(claim),
-      });
+      await claims.createEntity({ partitionKey: CLAIM_PK, rowKey: claim.game_id, ...claim });
     } catch (error) {
       if (error instanceof RestError && error.statusCode === 409) {
         throw new AppError(

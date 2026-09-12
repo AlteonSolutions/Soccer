@@ -1,6 +1,8 @@
 # First deploy — signup.alteonapps.com
 
-_Status: not yet performed. Every Azure name below is what `infra/main.bicep` will create._
+_Status: steps 1–2 performed 2026-09-12; the Bicep is applied and authoritative. Live names:
+resource group `snaccer-rg`, Static Web App `snaccer-web` at
+`lively-grass-0c651cf0f.5.azurestaticapps.net`, Logic App `snaccer-reminders-schedule`._
 
 Everything runs on the free or per-use tiers; the expected bill is under a few dollars a month.
 Steps 1–3 create the Azure resources, 4–5 wire GitHub and ship, 6–8 attach the domain and switch

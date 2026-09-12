@@ -6,3 +6,4 @@
 import "./games.js";
 import "./claims.js";
 import "./admin.js";
+import "./jobs.js";

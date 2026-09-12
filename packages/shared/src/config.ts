@@ -35,6 +35,10 @@ const envSchema = z
     // Game dates are calendar dates in the team's zone; "today" is computed in it, not in UTC.
     TIMEZONE: z.string().min(1).default("America/New_York"),
 
+    // Shared secret the scheduler presents to POST /api/jobs/reminders. Absent = endpoint disabled.
+    // 32+ characters: long enough that guessing is not a plan; the job it guards is idempotent anyway.
+    JOB_KEY: z.string().min(32).optional(),
+
     TEAM_NAME: z.string().trim().min(1).max(60).default("Our Team"),
     // Used in emails as the link back to the site. 4280 is the SWA CLI's default local port.
     SITE_URL: z.url().default("http://localhost:4280"),

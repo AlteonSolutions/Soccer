@@ -32,7 +32,6 @@ await build({
 });
 for (const file of [
   "index.html",
-  "admin.html",
   "forbidden.html",
   "styles.css",
   "logo.svg",
@@ -40,6 +39,9 @@ for (const file of [
 ]) {
   cpSync(join(root, "client", file), join(dist, "client", file));
 }
+// The coach's page lives at /admin/ so the documented `/admin/*` route rule can gate it.
+mkdirSync(join(dist, "client", "admin"), { recursive: true });
+cpSync(join(root, "client", "admin.html"), join(dist, "client", "admin", "index.html"));
 
 // API: one CommonJS file for the Functions Node worker. CJS avoids the ESM `require` shim that
 // the Azure SDKs otherwise need when bundled.

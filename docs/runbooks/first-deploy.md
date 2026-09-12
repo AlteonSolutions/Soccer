@@ -69,7 +69,7 @@ schedule page, empty.
 
 Portal → the Static Web App → **Role management** → Invite: provider *Microsoft Entra ID*, your
 Microsoft account email, role `admin`, 24-hour link. Open the link, accept, then go to `/login` on
-the site. `/admin.html` now works: paste the team list, add the first game.
+the site. `/admin/` now works: paste the team list, add the first game.
 
 ## 6. signup.alteonapps.com
 

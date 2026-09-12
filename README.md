@@ -50,8 +50,8 @@ pnpm workspaces, one lockfile. Node 22 is pinned in `package.json` `engines`, `c
   esbuild into one file, so the platform installs nothing and `workspace:` deps are no problem.
 - **Entry points stay thin.** `api/src/routes/` registers functions; `api/src/lib/` does the work
   with a `DataRepo` and a `SendEmail` passed in, so tests use the in-memory repo and captured email.
-- **Privacy by type.** `publicGameSchema` has a name, not an email. Admin routes are gated by SWA
-  route rules and again by `requireAdmin` in the API.
+- **Privacy by type.** `publicGameSchema` has a name, not an email. The admin page is gated by an
+  SWA route rule; the admin API by `requireAdmin`, reading the principal header SWA sets.
 - **Email never fails the primary action** and never leaves the building until `EMAIL_LIVE=on`.
 - **Quality gate.** `pnpm run gate` = typecheck (every package) + ESLint + Prettier + Vitest against
   source, with an Azurite-backed test that skips itself when the emulator is down. The pre-commit

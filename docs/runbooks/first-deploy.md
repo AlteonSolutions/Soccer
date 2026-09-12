@@ -30,7 +30,7 @@ az deployment group create --resource-group snaccer-rg --template-file infra/mai
 az deployment group show --resource-group snaccer-rg --name main --query properties.outputs -o table
 ```
 
-Note `staticWebAppName`, `staticWebAppDefaultHostname`, `remindersFunctionAppName`. Email is
+Note `staticWebAppName`, `staticWebAppDefaultHostname`, `scheduleLogicAppName`. Email is
 created with the Azure-managed sender for now (`emailFrom` output) and the `alteonapps.com`
 domain resource exists but is not linked yet; that is step 7.
 
@@ -38,36 +38,31 @@ From this moment `infra/main.bicep` is authoritative: change the first line of t
 `infra/main.bicepparam` to say so, in the same commit as any later change to them.
 
 If the deployment fails, paste the error into a Claude session against this repo; an API version
-or property name is the likely culprit and is a one-line fix. One already seen:
-`SubscriptionIsOverQuotaForSku` for `Microsoft.Web/serverFarms` means the subscription's
-Consumption-plan allowance in that region is used up; the reminders app deploys to
-`functionsLocation` (default East US) for that reason. Change that parameter to any region with
-free quota.
+or property name is the likely culprit and is a one-line fix. (The first attempt hit
+`SubscriptionIsOverQuotaForSku` for a Consumption-plan Function App; that is why the schedule is a
+Logic App now and there is no Function App to have quota for.)
 
-## 3. Get the two deployment credentials
+## 3. Get the deployment token
 
 ```
 az staticwebapp secrets list --name <staticWebAppName> --resource-group snaccer-rg --query properties.apiKey -o tsv
-az functionapp deployment list-publishing-profiles --name <remindersFunctionAppName> --resource-group snaccer-rg --xml
 ```
 
-## 4. Put them in GitHub
+## 4. Put it in GitHub
 
 Repository → Settings → Secrets and variables → Actions:
 
 | Kind | Name | Value |
 |---|---|---|
-| Secret | `AZURE_STATIC_WEB_APPS_API_TOKEN` | the first command's output |
-| Secret | `AZURE_REMINDERS_PUBLISH_PROFILE` | the whole XML from the second |
-| Variable | `AZURE_REMINDERS_APP_NAME` | `remindersFunctionAppName` |
+| Secret | `AZURE_STATIC_WEB_APPS_API_TOKEN` | the command's output |
 | Variable | `DEPLOY_ENABLED` | `true` |
 
 Until `DEPLOY_ENABLED` exists, pushes to `main` run the gate and deploy nothing.
 
 ## 5. Ship and become the coach
 
-Push to `main` (or re-run the latest CI run from the Actions tab). `deploy-web` and
-`deploy-reminders` run after `test` passes. Open `https://<staticWebAppDefaultHostname>/`: the
+Push to `main` (or run the CI workflow from the Actions tab on `main`). `deploy-web` runs after
+`test` passes. Open `https://<staticWebAppDefaultHostname>/`: the
 schedule page, empty.
 
 Portal → the Static Web App → **Role management** → Invite: provider *Microsoft Entra ID*, your
@@ -121,17 +116,11 @@ az deployment group create --resource-group snaccer-rg --template-file infra/mai
 ```
 
 Then sign up for a game on the site with your own player: the confirmation should arrive from
-snacks@alteonapps.com within a minute. To exercise the timer without waiting for Monday:
-
-```
-curl -X POST "https://<remindersFunctionAppName>.azurewebsites.net/admin/functions/send-reminders" \
-  -H "x-functions-key: <master key: Portal → Function App → App keys → _master>" \
-  -H "content-type: application/json" -d "{}"
-```
-
-On a day that is not Monday or Thursday it logs `reminders.run` with `day: other` and sends
-nothing, which is itself the check that the timer is wired. Logs: Application Insights
-`snaccer-insights` → Logs → `traces | where message contains "reminders.run"`.
+snacks@alteonapps.com within a minute. To exercise the daily job without waiting for 14:00 UTC:
+Portal → Logic apps → `snaccer-reminders-schedule` → **Run** → Run. The run history shows the HTTP
+call and the JSON summary it returned (`day`, counts). On a day that is not Monday or Thursday it
+returns `day: other` and sends nothing, which is itself the check that the schedule is wired.
+Logs: Application Insights `snaccer-insights` → Logs → `traces | where message contains "reminders.run"`.
 
 ## Rollback
 

@@ -23,7 +23,7 @@ import {
   weekdayOf,
   type DataRepo,
   type SendEmail,
-} from "@soccer/shared";
+} from "./index.js";
 
 export interface RunContext {
   today: string;
@@ -137,23 +137,27 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
       const claim = claimByGame.get(game.id);
       const copy = teamReminderEmail(game, claim, ctx.teamName, ctx.siteUrl);
       // One email per address, nobody sees anyone else's. The snack family is on the list too.
+      // Sent in parallel: the Static Web Apps API allows 45 seconds per request, and a team is
+      // twenty-odd addresses at a few seconds each.
       const recipients = rosterEmails(roster);
-      for (const to of recipients) {
-        try {
-          await ctx.sendEmail({ to, ...copy });
+      const results = await Promise.allSettled(
+        recipients.map((to) => ctx.sendEmail({ to, ...copy })),
+      );
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
           summary.team_reminders_sent += 1;
-        } catch (error) {
+        } else {
           summary.team_reminders_failed += 1;
           ctx.log(
             JSON.stringify({
               event: "team_reminder.failed",
               game_id: game.id,
-              to,
-              detail: String(error),
+              to: recipients[i],
+              detail: String(result.reason),
             }),
           );
         }
-      }
+      });
       // Marked after the whole list is attempted: one bounced address must not re-send to everyone.
       await repo.markTeamReminded(game.id, ctx.now.toISOString());
       ctx.log(

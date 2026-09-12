@@ -1,6 +1,0 @@
-{
-  // Typecheck only; esbuild bundles src/index.ts into dist/index.js (see build.mjs).
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "noEmit": true },
-  "include": ["src", "test"]
-}

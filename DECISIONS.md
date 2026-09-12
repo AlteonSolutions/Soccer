@@ -11,6 +11,23 @@ old one. Entry format:
 **Consequence.** What this costs or constrains. Supersedes: <date, or "none">.
 ```
 
+### 2026-09-12 — Schedule the daily reminder run with a Logic App calling the API, not a Function App
+**Context.** The first two Bicep runs failed preflight with `SubscriptionIsOverQuotaForSku`: the
+subscription has no Consumption-plan Function App quota in East US and its one slot in East US 2 is
+taken. A quota request takes days; the only thing the separate app did was hold a timer.
+**Decision.** `runReminders` lives in `packages/shared` and is exposed as `POST /api/jobs/reminders`
+in the Static Web App's own API, guarded by a shared `JOB_KEY` compared in constant time. A
+Consumption Logic App, created by the same Bicep, calls it daily at 14:00 UTC with three retries.
+The key is derived deterministically in Bicep from subscription and resource-group ids so both
+sides always agree after a redeploy. Thursday's sends run in parallel to fit the API's 45-second
+request limit.
+**Rejected.** Flex Consumption (different quota, but a different deployment shape and a bigger
+change). A GitHub Actions cron (free, but the schedule would live outside Azure). A quota increase
+request (days of waiting for one tiny app).
+**Consequence.** One deployable instead of two, one secret in GitHub instead of two, and a
+scheduler that costs about a cent a month. `apps/reminders` is gone. Supersedes: 2026-09-07 "Host
+on Azure at the lowest tier" (the Function App clause only; everything else stands).
+
 ### 2026-09-07 — Merge pull requests with a merge commit; deploy from `main` only
 **Context.** The first pull request is ready and the delivery-flow row was still open. Every commit
 on the branch carries the prose body the house convention asks for; a squash would replace nine
@@ -42,6 +59,7 @@ credential, the secret-in-config hazard the house rules exist for.
 **Consequence.** Two deployables (SWA, reminders Function App) instead of one; the reminders app
 is tiny and shares every module. Expected cost is under a few dollars a month. Supersedes:
 2026-09-07 "Defer the deploy target".
+_The Function App clause is superseded by 2026-09-12 "Schedule the daily reminder run with a Logic App"._
 
 ### 2026-09-07 — No parent accounts; the site is public and a sign-up is a name plus an email that only the coach sees
 **Context.** The owner asked for the simplest thing: parents visit a page, sign up for a game with

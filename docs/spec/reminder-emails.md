@@ -46,9 +46,12 @@ Thursday email, not two.
 
 ## Where it runs
 
-`apps/reminders` is its own Azure Function App on the Consumption plan with one daily timer,
-because Static Web Apps Free runs HTTP triggers only. It shares the storage account and the config
-variables with the web API; the logic (`runReminders`) is tested with the in-memory repo and
-captured email for a Monday, a Thursday, and an ordinary day.
+`POST /api/jobs/reminders` in `apps/web`, guarded by a shared secret (`JOB_KEY`, header
+`x-job-key`, constant-time compare). An Azure Logic App (Consumption) created by `infra/main.bicep`
+calls it every day at 14:00 UTC with three retries. The endpoint is idempotent, so a retry or a
+manual run never sends twice. There is no separate Function App: Static Web Apps Free has no timer
+triggers, and the subscription has no Consumption-plan quota, so the schedule lives in the Logic
+App and the run lives in the API. Thursday's sends go out in parallel to stay inside the Static Web
+Apps API's 45-second request limit.
 
 To run it by hand against a deployed app, see `docs/runbooks/first-deploy.md` ("Send a test run").

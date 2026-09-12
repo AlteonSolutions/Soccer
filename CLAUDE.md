@@ -5,20 +5,20 @@ for parents.
 
 ## Facts
 
-- Node 22 is the only Node major here. It appears in `package.json` `engines`, in CI, in
-  `infra/main.bicep` (`nodeMajor`) and in `apps/web/client/staticwebapp.config.json`
-  (`platform.apiRuntime`). Those change in one commit or not at all. `.npmrc` sets `engine-strict`,
+- Node 22 is the only Node major here. It appears in `package.json` `engines`, in CI, and in
+  `apps/web/client/staticwebapp.config.json` (`platform.apiRuntime`). Those change in one commit
+  or not at all. `.npmrc` sets `engine-strict`,
   so the wrong major refuses to install.
 - Package manager: pnpm 10.33.0, pinned in `packageManager`. Lockfile is committed; CI installs
   frozen. Do not install with another manager.
-- Layout: pnpm workspaces — `apps/web` (Static Web App: `client/` + `api/`), `apps/reminders`
-  (timer Function App), `packages/shared`; one lockfile at the root. Each app's `build.mjs` bundles
-  it with esbuild into `dist/`; nothing is installed on the platform.
+- Layout: pnpm workspaces — `apps/web` (Static Web App: `client/` + `api/`) and `packages/shared`;
+  one lockfile at the root. `apps/web/build.mjs` bundles with esbuild into `dist/`; nothing is
+  installed on the platform. The daily reminder run is an API endpoint a Logic App calls.
 - Shared types and schemas: `packages/shared` (`@soccer/shared`). Import them; never redeclare a
   shape locally. It is consumed as **source** by tsc, Vitest and esbuild alike; it has no build.
   Browser code imports types only, from `@soccer/shared/schemas`.
 - Hosting: Azure, lowest tier — Static Web Apps Free, Table Storage, Communication Services Email,
-  a Consumption Function App for the timer. `infra/main.bicep` is the source of truth once applied;
+  a Logic App for the daily schedule. `infra/main.bicep` is the source of truth once applied;
   its first line says whether it has been. Deploys run from `main` only, after the gate.
 - Module system: ESM `NodeNext`. Every relative import carries a `.js` extension, even from `.ts`
   source (`./config.js`, never `./config`). Nothing warns until runtime.

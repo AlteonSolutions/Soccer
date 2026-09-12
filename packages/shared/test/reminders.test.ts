@@ -1,13 +1,13 @@
+import { createMemoryRepo } from "../src/data-memory.js";
 import {
   clearCapturedEmails,
-  createMemoryRepo,
   readCapturedEmails,
   sendEmail,
   type SendEmail,
-} from "@soccer/shared";
+} from "../src/email.js";
 import { beforeEach, describe, expect, it } from "vitest";
-import { runReminders, type RunContext } from "../src/lib.js";
-import { claim, game, member } from "../../../packages/shared/test/fixtures.js";
+import { runReminders, type RunContext } from "../src/reminders.js";
+import { claim, game, member } from "./fixtures.js";
 
 // 2026-09-14 Monday, 2026-09-15 Tuesday, 2026-09-17 Thursday; the fixture game is Saturday the 19th.
 function ctx(overrides: Partial<RunContext> = {}): RunContext {

@@ -14,6 +14,9 @@ Azure portal, the Azure CLI and GitHub.
 - `infra/main.bicepparam` checked: `teamName`, `timeZone`, `coachEmail`. `siteUrl` and
   `emailCustomDomain` are already set for signup.alteonapps.com.
 
+These commands are written for a bash shell such as Azure Cloud Shell (shell.azure.com), which has
+`az` and `git` ready. In Windows PowerShell, run commands one per line (no `&&`).
+
 ## 1. Create the resource group
 
 ```
@@ -35,7 +38,11 @@ From this moment `infra/main.bicep` is authoritative: change the first line of t
 `infra/main.bicepparam` to say so, in the same commit as any later change to them.
 
 If the deployment fails, paste the error into a Claude session against this repo; an API version
-or property name is the likely culprit and is a one-line fix.
+or property name is the likely culprit and is a one-line fix. One already seen:
+`SubscriptionIsOverQuotaForSku` for `Microsoft.Web/serverFarms` means the subscription's
+Consumption-plan allowance in that region is used up; the reminders app deploys to
+`functionsLocation` (default East US) for that reason. Change that parameter to any region with
+free quota.
 
 ## 3. Get the two deployment credentials
 

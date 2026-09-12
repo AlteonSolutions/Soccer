@@ -13,7 +13,7 @@ _Written to be read cold. Update it in the same commit as the change it describe
   coach if nobody is. Thursday: reminder about Saturday's game to every address on the team list.
 - `packages/shared` — schemas, config, the Table Storage data guard (`withData()`), email behind
   the capture-vs-send flag, and the pure sign-up/reminder rules.
-- `infra/main.bicep` — every Azure resource, at the lowest tier. **Not yet applied.**
+- `infra/main.bicep` — every Azure resource, at the lowest tier. **Applied 2026-09-12** to `snaccer-rg`.
 - Specs: `docs/spec/snack-signup.md`, `docs/spec/reminder-emails.md`.
 
 **What is verified.** `pnpm run gate` passes: typecheck of every package, lint, format, 53 tests.
@@ -23,9 +23,9 @@ client bundle and handler logic (in-memory storage) and screenshotted at desktop
 
 **What is not verified, and how it gets verified.**
 
-- The Bicep compiles but has not been applied. Two attempts failed preflight on Consumption-plan
-  quota; the Function App is gone as a result. Next run: `docs/runbooks/first-deploy.md` step 2.
-- The deploy workflow has never run (needs the token from that runbook, step 4).
+- The Bicep is applied; the Logic App's daily call and the app settings it wrote are unexercised
+  until the first deploy lands.
+- The deploy workflow has never run (needs the token from the runbook, step 4).
 - The web app has not been run end to end through the SWA CLI here (Azure Functions Core Tools not
   installed). `pnpm run dev` on a machine with `func` is the check.
 - Whether SWA's built-in Entra sign-in accepts a personal Microsoft account for the coach; if not,
@@ -36,9 +36,9 @@ client bundle and handler logic (in-memory storage) and screenshotted at desktop
 **Go-live checklist** (target: https://signup.alteonapps.com, sender snacks@alteonapps.com).
 Each item is a step in `docs/runbooks/first-deploy.md`.
 
-- [ ] Merge this branch to `main`.
-- [ ] Runbook 1–2: resource group, apply the Bicep. Fix and commit whatever the first run needs;
-      change the first line of `infra/main.bicep` and `main.bicepparam` to say it is applied.
+- [x] Merge this branch to `main`.
+- [x] Runbook 1–2: resource group `snaccer-rg`, Bicep applied 2026-09-12 (after two quota
+      failures that turned the Function App into a Logic App, and one Logic App property fix).
 - [ ] Runbook 3–4: one secret and one variable in GitHub.
 - [ ] Runbook 5: deploy from `main`; invite yourself as `admin`; paste the team list; add games.
 - [ ] Runbook 6: CNAME `signup` → the Static Web App; attach the hostname.

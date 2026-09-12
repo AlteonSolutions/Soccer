@@ -1,6 +1,8 @@
-// NOT YET APPLIED. This file becomes authoritative the moment `az deployment group create` runs
-// against it (docs/runbooks/first-deploy.md). Until then the live names are whatever that run
-// creates, and nothing exists in Azure.
+// APPLIED 2026-09-12 to resource group snaccer-rg (subscription of the coach's Azure account) and
+// authoritative since: change Azure only by changing this file and redeploying it
+// (docs/runbooks/first-deploy.md step 2). Live names: snaccer-web (Static Web App, default host
+// lively-grass-0c651cf0f.5.azurestaticapps.net), snaccerdb3y3xrgf5vpo (storage), snaccer-email,
+// snaccer-comms, snaccer-insights, snaccer-reminders-schedule.
 //
 // Everything the app needs, at the lowest tier that works:
 //   - one storage account: Table Storage for the app

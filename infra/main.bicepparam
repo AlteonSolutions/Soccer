@@ -1,4 +1,4 @@
-// NOT YET APPLIED. Parameter values for the first deployment; edit before running the runbook.
+// APPLIED 2026-09-12 with these values. Edit and redeploy to change the live configuration.
 using './main.bicep'
 
 param namePrefix = 'snaccer'

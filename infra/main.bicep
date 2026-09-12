@@ -205,8 +205,8 @@ resource schedule 'Microsoft.Logic/workflows@2019-05-01' = {
               'content-type': 'application/json'
             }
             body: {}
+            retryPolicy: { type: 'fixed', count: 3, interval: 'PT10M' }
           }
-          retryPolicy: { type: 'fixed', count: 3, interval: 'PT10M' }
         }
       }
       outputs: {}

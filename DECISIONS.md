@@ -11,6 +11,20 @@ old one. Entry format:
 **Consequence.** What this costs or constrains. Supersedes: <date, or "none">.
 ```
 
+### 2026-09-12 — Gate the admin API in code, not with an SWA route rule
+**Context.** First deploy. With `{ "route": "/api/admin/*", "allowedRoles": ["admin"] }` in
+`staticwebapp.config.json`, every `/api/admin/*` call returned a bare 404 — for the signed-in
+coach with the `admin` role too — while nested routes without a rule worked (`/api/jobs/reminders`
+answered 403 as designed) and the function list showed all eight functions registered.
+**Decision.** No SWA role rule on API paths. `requireAdmin` in the API is the gate: it reads
+`x-ms-client-principal`, which Static Web Apps sets from the session on every request and
+overwrites if a client sends one. The admin page moves to `/admin/` behind the documented
+`/admin/*` rule; `/admin*` is not a documented wildcard form and may never have matched.
+**Rejected.** Debugging the platform behaviour further: each attempt is a deploy cycle, and the
+code gate was always the one that mattered.
+**Consequence.** "Gated twice" is now "page gated by SWA, API gated by code". A regression in
+`requireAdmin` would expose emails, so its tests stay. Supersedes: none.
+
 ### 2026-09-12 — Schedule the daily reminder run with a Logic App calling the API, not a Function App
 **Context.** The first two Bicep runs failed preflight with `SubscriptionIsOverQuotaForSku`: the
 subscription has no Consumption-plan Function App quota in East US and its one slot in East US 2 is

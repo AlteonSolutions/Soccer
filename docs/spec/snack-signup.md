@@ -43,7 +43,7 @@ licensed to use, replace that one file; nothing else references it by content.
 
 - `/` — the schedule. Title Case headings. Each game: date, kickoff, opponent, location,
   and either "Snacks: _Player_" or a **Sign Up** button that opens the picker and confirm step.
-- `/admin.html` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Add A
+- `/admin/` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Add A
   Game; the table of games with sign-ups and emails; Release Slot; Remove Game; the Team List
   (one line per player: name, then up to four parent emails; re-adding a player replaces them).
 - `/login`, `/logout` — redirects to the SWA auth endpoints.
@@ -63,8 +63,10 @@ licensed to use, replace that one file; nothing else references it by content.
 | `DELETE /api/admin/roster/{player}` | admin | `204` |
 
 Errors are `{ error: { code, message } }` with the codes in `packages/shared/src/errors.ts`.
-Admin routes are gated twice: SWA route rules (`staticwebapp.config.json`) and `requireAdmin` in
-the API, so a misconfigured rule cannot expose emails.
+The admin **page** is gated by the SWA route rule `/admin/*`. The admin **API** is gated by
+`requireAdmin`, which reads the `x-ms-client-principal` header that Static Web Apps sets from the
+session on every request (a client-supplied value is replaced). An SWA role rule on `/api/admin/*`
+was tried first and made those routes 404 for everyone, admin included; it is deliberately absent.
 
 ## Data
 

@@ -24,6 +24,9 @@ overwrites if a client sends one. The admin page moves to `/admin/` behind the d
 code gate was always the one that mattered.
 **Consequence.** "Gated twice" is now "page gated by SWA, API gated by code". A regression in
 `requireAdmin` would expose emails, so its tests stay. Supersedes: none.
+_Addendum, same day: removing the rule was not enough. The real cause was the route name: the
+Functions host reserves `/admin/*` and SWA strips the `/api` prefix when forwarding, so `admin/…`
+routes are unreachable. The API routes are now `coach/…`._
 
 ### 2026-09-12 — Schedule the daily reminder run with a Logic App calling the API, not a Function App
 **Context.** The first two Bicep runs failed preflight with `SubscriptionIsOverQuotaForSku`: the

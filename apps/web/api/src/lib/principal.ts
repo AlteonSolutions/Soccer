@@ -1,8 +1,8 @@
 /*
  * Azure Static Web Apps authenticates the coach and forwards the result to the API as a base64
- * JSON header, `x-ms-client-principal`. SWA also blocks `/api/admin/*` for anyone without the
- * `admin` role in staticwebapp.config.json — this module is the second check, so that a
- * misconfigured route rule cannot silently expose parents' emails.
+ * JSON header, `x-ms-client-principal`, on every request, replacing any value a client sent. This
+ * module is the only gate on the coach's API routes: an SWA role rule on the API path was tried
+ * and broke routing, and the page rule (`/admin/*`) protects only the page.
  */
 import { AppError } from "@soccer/shared";
 import { z } from "zod";

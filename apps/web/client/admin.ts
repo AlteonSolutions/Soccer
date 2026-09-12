@@ -66,7 +66,7 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   if (game.claim) {
     actions.append(
       actionButton("Release Slot", "secondary", () =>
-        request("DELETE", `/api/admin/claims/${game.id}`),
+        request("DELETE", `/api/coach/claims/${game.id}`),
       ),
     );
   }
@@ -74,7 +74,7 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
     actionButton("Remove Game", "danger", async () => {
       if (!window.confirm(`Remove the game vs ${game.opponent} on ${formatDate(game.date)}?`))
         return;
-      await request("DELETE", `/api/admin/games/${game.id}`);
+      await request("DELETE", `/api/coach/games/${game.id}`);
     }),
   );
   tr.append(actions);
@@ -93,7 +93,7 @@ function renderMember(member: RosterMember): HTMLLIElement {
   li.append(
     who,
     actionButton("Remove", "danger", () =>
-      request("DELETE", `/api/admin/roster/${encodeURIComponent(member.player)}`),
+      request("DELETE", `/api/coach/roster/${encodeURIComponent(member.player)}`),
     ),
   );
   return li;
@@ -113,8 +113,8 @@ function renderRoster(members: RosterMember[]): void {
 async function load(): Promise<void> {
   try {
     const [{ games }, { members }] = await Promise.all([
-      request<{ games: AdminGame[] }>("GET", "/api/admin/games"),
-      request<{ members: RosterMember[] }>("GET", "/api/admin/roster"),
+      request<{ games: AdminGame[] }>("GET", "/api/coach/games"),
+      request<{ members: RosterMember[] }>("GET", "/api/coach/roster"),
     ]);
     rows.replaceChildren(...games.map(renderRow));
     renderRoster(members);
@@ -137,7 +137,7 @@ rosterForm.addEventListener("submit", async (event) => {
   const submit = rosterForm.querySelector("button[type=submit]") as HTMLButtonElement;
   submit.disabled = true;
   try {
-    const { members } = await request<{ members: RosterMember[] }>("POST", "/api/admin/roster", {
+    const { members } = await request<{ members: RosterMember[] }>("POST", "/api/coach/roster", {
       members: parsed,
     });
     rosterForm.reset();
@@ -156,7 +156,7 @@ addForm.addEventListener("submit", async (event) => {
   const submit = addForm.querySelector("button[type=submit]") as HTMLButtonElement;
   submit.disabled = true;
   try {
-    await request("POST", "/api/admin/games", {
+    await request("POST", "/api/coach/games", {
       date: String(data.get("date") ?? ""),
       kickoff: String(data.get("kickoff") ?? ""),
       opponent: String(data.get("opponent") ?? ""),

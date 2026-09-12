@@ -13,12 +13,15 @@ import {
 import { json, parseBody, parseParam, toErrorResponse } from "../lib/http.js";
 import { requireAdmin } from "../lib/principal.js";
 
+// Routes are "coach/…", not "admin/…": Static Web Apps forwards /api/* to the Functions host with
+// the prefix stripped, and the host reserves /admin/* for its own management endpoints, so an
+// "admin/games" route is unreachable (a bare 404) however it is registered. Learned on first deploy.
 const PRINCIPAL_HEADER = "x-ms-client-principal";
 
 app.http("admin-games", {
-  route: "admin/games",
+  route: "coach/games",
   methods: ["GET", "POST"],
-  authLevel: "anonymous", // SWA route rules gate /api/admin/*; requireAdmin is the second check.
+  authLevel: "anonymous", // requireAdmin is the gate; it reads the principal header SWA sets.
   handler: async (request: HttpRequest, context: InvocationContext) => {
     try {
       requireAdmin(request.headers.get(PRINCIPAL_HEADER));
@@ -32,7 +35,7 @@ app.http("admin-games", {
 });
 
 app.http("admin-game", {
-  route: "admin/games/{id}",
+  route: "coach/games/{id}",
   methods: ["DELETE"],
   authLevel: "anonymous",
   handler: async (request: HttpRequest, context: InvocationContext) => {
@@ -48,7 +51,7 @@ app.http("admin-game", {
 });
 
 app.http("admin-claim", {
-  route: "admin/claims/{gameId}",
+  route: "coach/claims/{gameId}",
   methods: ["DELETE"],
   authLevel: "anonymous",
   handler: async (request: HttpRequest, context: InvocationContext) => {
@@ -64,7 +67,7 @@ app.http("admin-claim", {
 });
 
 app.http("admin-roster", {
-  route: "admin/roster",
+  route: "coach/roster",
   methods: ["GET", "POST"],
   authLevel: "anonymous",
   handler: async (request: HttpRequest, context: InvocationContext) => {
@@ -82,7 +85,7 @@ app.http("admin-roster", {
 });
 
 app.http("admin-roster-member", {
-  route: "admin/roster/{player}",
+  route: "coach/roster/{player}",
   methods: ["DELETE"],
   authLevel: "anonymous",
   handler: async (request: HttpRequest, context: InvocationContext) => {

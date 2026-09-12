@@ -17,14 +17,14 @@ Azure portal, the Azure CLI and GitHub.
 ## 1. Create the resource group
 
 ```
-az group create --name soccer-rg --location eastus2
+az group create --name snaccer-rg --location eastus2
 ```
 
 ## 2. Apply the Bicep
 
 ```
-az deployment group create --resource-group soccer-rg --template-file infra/main.bicep --parameters infra/main.bicepparam
-az deployment group show --resource-group soccer-rg --name main --query properties.outputs -o table
+az deployment group create --resource-group snaccer-rg --template-file infra/main.bicep --parameters infra/main.bicepparam
+az deployment group show --resource-group snaccer-rg --name main --query properties.outputs -o table
 ```
 
 Note `staticWebAppName`, `staticWebAppDefaultHostname`, `remindersFunctionAppName`. Email is
@@ -40,8 +40,8 @@ or property name is the likely culprit and is a one-line fix.
 ## 3. Get the two deployment credentials
 
 ```
-az staticwebapp secrets list --name <staticWebAppName> --resource-group soccer-rg --query properties.apiKey -o tsv
-az functionapp deployment list-publishing-profiles --name <remindersFunctionAppName> --resource-group soccer-rg --xml
+az staticwebapp secrets list --name <staticWebAppName> --resource-group snaccer-rg --query properties.apiKey -o tsv
+az functionapp deployment list-publishing-profiles --name <remindersFunctionAppName> --resource-group snaccer-rg --xml
 ```
 
 ## 4. Put them in GitHub
@@ -78,7 +78,7 @@ At your DNS host for `alteonapps.com`, add:
 Then:
 
 ```
-az staticwebapp hostname set --name <staticWebAppName> --resource-group soccer-rg --hostname signup.alteonapps.com
+az staticwebapp hostname set --name <staticWebAppName> --resource-group snaccer-rg --hostname signup.alteonapps.com
 ```
 
 Validation takes a few minutes after the CNAME propagates; the certificate is issued automatically
@@ -87,7 +87,7 @@ keeps working too.
 
 ## 7. Email from snacks@alteonapps.com
 
-Portal → **Email Communication Services** → `soccer-email` → **Provision domains** →
+Portal → **Email Communication Services** → `snaccer-email` → **Provision domains** →
 `alteonapps.com`. It lists four records to add at your DNS host:
 
 | Purpose | Type | Name | Note |
@@ -101,7 +101,7 @@ Click **Verify** on each. It can take up to an hour. When all four show Verified
 
 ```
 # infra/main.bicepparam: param linkCustomEmailDomain = true
-az deployment group create --resource-group soccer-rg --template-file infra/main.bicep --parameters infra/main.bicepparam
+az deployment group create --resource-group snaccer-rg --template-file infra/main.bicep --parameters infra/main.bicepparam
 ```
 
 The `emailFrom` output becomes `snacks@alteonapps.com`. Commit the parameter change.
@@ -110,7 +110,7 @@ The `emailFrom` output becomes `snacks@alteonapps.com`. Commit the parameter cha
 
 ```
 # infra/main.bicepparam: param emailLive = 'on'
-az deployment group create --resource-group soccer-rg --template-file infra/main.bicep --parameters infra/main.bicepparam
+az deployment group create --resource-group snaccer-rg --template-file infra/main.bicep --parameters infra/main.bicepparam
 ```
 
 Then sign up for a game on the site with your own player: the confirmation should arrive from
@@ -124,10 +124,10 @@ curl -X POST "https://<remindersFunctionAppName>.azurewebsites.net/admin/functio
 
 On a day that is not Monday or Thursday it logs `reminders.run` with `day: other` and sends
 nothing, which is itself the check that the timer is wired. Logs: Application Insights
-`soccer-insights` → Logs → `traces | where message contains "reminders.run"`.
+`snaccer-insights` → Logs → `traces | where message contains "reminders.run"`.
 
 ## Rollback
 
 `emailLive = 'off'` and redeploy the Bicep stops all outbound mail within a minute. Removing the
-`DEPLOY_ENABLED` variable stops deploys. `az group delete --name soccer-rg` removes everything
+`DEPLOY_ENABLED` variable stops deploys. `az group delete --name snaccer-rg` removes everything
 (the DNS records at your host stay until you delete them).

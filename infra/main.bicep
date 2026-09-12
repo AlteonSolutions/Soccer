@@ -20,6 +20,9 @@ param namePrefix string = 'soccer'
 @description('Region for regional resources. Static Web Apps picks its own nearest region.')
 param location string = resourceGroup().location
 
+@description('Region for the reminders Function App and its plan. Separate from `location` because the Consumption-plan quota is per region and this subscription already used its East US 2 allowance.')
+param functionsLocation string = 'eastus'
+
 @description('Region for the Static Web App; only a few are allowed.')
 @allowed(['westus2', 'centralus', 'eastus2', 'westeurope', 'eastasia'])
 param staticWebAppLocation string = 'eastus2'
@@ -167,7 +170,7 @@ resource insights 'Microsoft.Insights/components@2020-02-02' = {
 
 resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: '${namePrefix}-plan'
-  location: location
+  location: functionsLocation
   kind: 'functionapp'
   sku: { name: 'Y1', tier: 'Dynamic' } // Consumption: billed per execution, free grant covers a daily timer
   properties: { reserved: true } // Linux
@@ -175,7 +178,7 @@ resource plan 'Microsoft.Web/serverfarms@2023-12-01' = {
 
 resource reminders 'Microsoft.Web/sites@2023-12-01' = {
   name: '${namePrefix}-reminders-${suffix}'
-  location: location
+  location: functionsLocation
   kind: 'functionapp,linux'
   properties: {
     serverFarmId: plan.id

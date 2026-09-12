@@ -54,18 +54,18 @@ licensed to use, replace that one file; nothing else references it by content.
 |---|---|---|
 | `GET /api/games` | anyone | `{ team_name, games: PublicGame[], players: string[] }` |
 | `POST /api/claims` | anyone | `{ game_id, player }` → `201 { game: PublicGame, confirmation_sent }` |
-| `GET /api/admin/games` | admin | `{ games: AdminGame[] }` (emails included) |
-| `POST /api/admin/games` | admin | `NewGameInput` → `201 Game` |
-| `DELETE /api/admin/games/{id}` | admin | `204` |
-| `DELETE /api/admin/claims/{gameId}` | admin | `204` |
-| `GET /api/admin/roster` | admin | `{ members: RosterMember[] }` |
-| `POST /api/admin/roster` | admin | `{ members: [{ player, emails: string[1..4] }] }` (≤100) → `201 { members }` |
-| `DELETE /api/admin/roster/{player}` | admin | `204` |
+| `GET /api/coach/games` | admin | `{ games: AdminGame[] }` (emails included) |
+| `POST /api/coach/games` | admin | `NewGameInput` → `201 Game` |
+| `DELETE /api/coach/games/{id}` | admin | `204` |
+| `DELETE /api/coach/claims/{gameId}` | admin | `204` |
+| `GET /api/coach/roster` | admin | `{ members: RosterMember[] }` |
+| `POST /api/coach/roster` | admin | `{ members: [{ player, emails: string[1..4] }] }` (≤100) → `201 { members }` |
+| `DELETE /api/coach/roster/{player}` | admin | `204` |
 
 Errors are `{ error: { code, message } }` with the codes in `packages/shared/src/errors.ts`.
 The admin **page** is gated by the SWA route rule `/admin/*`. The admin **API** is gated by
 `requireAdmin`, which reads the `x-ms-client-principal` header that Static Web Apps sets from the
-session on every request (a client-supplied value is replaced). An SWA role rule on `/api/admin/*`
+session on every request (a client-supplied value is replaced). An SWA role rule on `/api/coach/*`
 was tried first and made those routes 404 for everyone, admin included; it is deliberately absent.
 
 ## Data

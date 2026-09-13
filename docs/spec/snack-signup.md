@@ -32,7 +32,10 @@ in the block (the second parent is on a continuation line). Parent names and pho
 kept — the school and the first parent's name run together, and nothing uses a parent's name. A
 player with no email in the PDF is listed in the preview for the coach to add by hand; more than
 four addresses keeps the first four and says so. The paste box remains for those and for
-mid-season additions.
+mid-season additions. Players keep the order the roster PDF lists them in (each member carries a
+`position`; hand-added players go to the end), so the admin page and the sign-up picker read like
+the league's roster. Each player has Edit: name and emails inline, Save or Cancel. Renaming a
+player moves their sign-ups to the new name; a rename that collides with another player is refused.
 
 The league's PDF carries the coaches' phone numbers and emails, so it is never committed; the test
 fixture is a PDF printed from HTML in the same layout with made-up people.
@@ -73,7 +76,8 @@ licensed to use, replace that one file; nothing else references it by content.
 - `/admin/` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Add A
   The Schedule (PDF upload, preview, import); Add A Game; the table of games with sign-ups and
   emails; Release Slot; Remove Game; the Team List
-  (one line per player: name, then up to four parent emails; re-adding a player replaces them).
+  (one line per player in roster order: name, then up to four parent emails, with Edit and
+  Remove; re-adding a player replaces their emails).
 - `/login`, `/logout` — redirects to the SWA auth endpoints.
 
 ## API
@@ -91,7 +95,8 @@ licensed to use, replace that one file; nothing else references it by content.
 | `DELETE /api/coach/games/{id}` | admin | `204` |
 | `DELETE /api/coach/claims/{gameId}` | admin | `204` |
 | `GET /api/coach/roster` | admin | `{ members: RosterMember[] }` |
-| `POST /api/coach/roster` | admin | `{ members: [{ player, emails: string[1..4] }] }` (≤100) → `201 { members }` |
+| `POST /api/coach/roster` | admin | `{ members: [{ player, emails: string[1..4], position? }] }` (≤100) → `201 { members }` |
+| `PUT /api/coach/roster/{player}` | admin | `{ player, emails }` → `200 RosterMember` (a rename moves the sign-ups) |
 | `DELETE /api/coach/roster/{player}` | admin | `204` |
 
 Errors are `{ error: { code, message } }` with the codes in `packages/shared/src/errors.ts`.
@@ -104,7 +109,7 @@ was tried first and made those routes 404 for everyone, admin included; it is de
 
 Three Table Storage tables. `roster`: partition `member`, row key = player name lower-cased (with
 the four characters Table Storage forbids in keys mapped to `_`), columns player, emails_json,
-added_at. Table Storage has no list column, so `emails` is a JSON string on disk and a `string[]`
+added_at, position (the roster order; lists sort by it, then by name). Table Storage has no list column, so `emails` is a JSON string on disk and a `string[]`
 everywhere else; only `data.ts` knows. `games`: partition `game`, row key = game id (`YYYY-MM-DD-opponent-slug`).
 `claims`: partition `claim`, row key = game id, which is what enforces one sign-up per game;
 columns player, created_at, reminded_at. No email is stored on a claim.

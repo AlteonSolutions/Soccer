@@ -39,6 +39,8 @@ export interface DataRepo {
   createClaim(claim: Claim): Promise<void>;
   deleteClaim(gameId: string): Promise<void>;
   markReminded(gameId: string, at: string): Promise<void>;
+  /** A player was renamed on the team list; their sign-ups follow. */
+  updateClaimPlayer(gameId: string, player: string): Promise<void>;
   markTeamReminded(gameId: string, at: string): Promise<void>;
   listRoster(): Promise<RosterMember[]>;
   /** Case-insensitive on the player's name. */
@@ -224,6 +226,10 @@ const tableRepo: DataRepo = {
   async markReminded(gameId, at) {
     const { claims } = await getClients();
     await claims.updateEntity({ partitionKey: CLAIM_PK, rowKey: gameId, reminded_at: at }, "Merge");
+  },
+  async updateClaimPlayer(gameId, player) {
+    const { claims } = await getClients();
+    await claims.updateEntity({ partitionKey: CLAIM_PK, rowKey: gameId, player }, "Merge");
   },
   async markTeamReminded(gameId, at) {
     const { games } = await getClients();

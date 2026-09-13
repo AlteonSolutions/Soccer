@@ -503,6 +503,19 @@ footer {
 .roster li strong {
   display: block;
 }
+.roster li.editing {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+}
+.roster li .row-edit {
+  grid-template-columns: 1fr 2fr;
+}
+.row-buttons {
+  display: flex;
+  gap: 0.35rem;
+  flex: none;
+}
 .roster li.empty {
   color: var(--muted);
   border: 0;

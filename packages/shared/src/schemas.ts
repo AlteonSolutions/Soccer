@@ -98,6 +98,8 @@ export const rosterMemberSchema = z
     player: playerName,
     emails: emailList,
     added_at: z.iso.datetime(),
+    // Where the player sits in the league\'s roster; the list is shown in this order. Absent = 0 (older rows).
+    position: z.number().int().nonnegative().default(0),
   })
   .strict();
 export type RosterMember = z.infer<typeof rosterMemberSchema>;
@@ -106,12 +108,26 @@ export type RosterMember = z.infer<typeof rosterMemberSchema>;
 export const rosterInputSchema = z
   .object({
     members: z
-      .array(z.object({ player: playerName, emails: emailList }).strict())
+      .array(
+        z
+          .object({
+            player: playerName,
+            emails: emailList,
+            position: z.number().int().nonnegative().optional(),
+          })
+          .strict(),
+      )
       .min(1)
       .max(100),
   })
   .strict();
 export type RosterInput = z.infer<typeof rosterInputSchema>;
+
+/** Editing one player on the team list: the name (a rename moves their sign-ups) and the emails. */
+export const rosterMemberUpdateSchema = z
+  .object({ player: playerName, emails: emailList })
+  .strict();
+export type RosterMemberUpdate = z.infer<typeof rosterMemberUpdateSchema>;
 
 /** One row of the roster import preview. */
 export const rosterPreviewRowSchema = z

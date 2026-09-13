@@ -155,13 +155,67 @@ function renderMember(member: RosterMember): HTMLLIElement {
   emails.className = "mono sub";
   emails.textContent = member.emails.join(" · ");
   who.append(name, emails);
-  li.append(
-    who,
+  const buttons = document.createElement("span");
+  buttons.className = "row-buttons";
+  const edit = document.createElement("button");
+  edit.className = "secondary";
+  edit.textContent = "Edit";
+  edit.addEventListener("click", () => editMember(li, member));
+  buttons.append(
+    edit,
     actionButton("Remove", "danger", () =>
       request("DELETE", `/api/coach/roster/${encodeURIComponent(member.player)}`),
     ),
   );
+  li.append(who, buttons);
   return li;
+}
+
+/** Swap a team-list row for inline inputs: the player's name and the parent emails. */
+function editMember(li: HTMLLIElement, member: RosterMember): void {
+  li.replaceChildren();
+  li.className = "editing";
+  const form = document.createElement("form");
+  form.className = "row-edit";
+  form.innerHTML = `
+    <label>Player <input name="player" required maxlength="60" /></label>
+    <label>Parent Emails (comma-separated) <input name="emails" required /></label>`;
+  (form.elements.namedItem("player") as HTMLInputElement).value = member.player;
+  (form.elements.namedItem("emails") as HTMLInputElement).value = member.emails.join(", ");
+  const buttons = document.createElement("span");
+  buttons.className = "row-buttons";
+  const save = document.createElement("button");
+  save.className = "primary";
+  save.textContent = "Save";
+  save.addEventListener("click", async () => {
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    const emails = String(data.get("emails") ?? "")
+      .split(/[,;\s]+/)
+      .map((e) => e.trim())
+      .filter(Boolean);
+    save.disabled = true;
+    try {
+      const { members } = await request<{ members: RosterMember[] }>(
+        "PUT",
+        `/api/coach/roster/${encodeURIComponent(member.player)}`,
+        { player: String(data.get("player") ?? ""), emails },
+      );
+      renderRoster(members);
+      await load();
+      setStatus("Player updated.");
+    } catch (error) {
+      report(error, "Could not save that player.");
+      save.disabled = false;
+    }
+  });
+  const cancel = document.createElement("button");
+  cancel.className = "secondary";
+  cancel.textContent = "Cancel";
+  cancel.addEventListener("click", () => li.replaceWith(renderMember(member)));
+  buttons.append(save, cancel);
+  li.append(form, buttons);
+  (form.elements.namedItem("player") as HTMLInputElement).focus();
 }
 
 function renderRoster(members: RosterMember[]): void {
@@ -399,9 +453,12 @@ rosterImportForm.addEventListener("submit", async (event) => {
 
 rosterImportConfirm.addEventListener("click", async () => {
   if (!pendingRoster) return;
-  const members = pendingRoster.members
-    .filter((m) => m.status !== "unchanged")
-    .map(({ player, emails }) => ({ player, emails }));
+  // Every player goes, unchanged ones included, so the team list takes the league's order.
+  const members = pendingRoster.members.map(({ player, emails }, position) => ({
+    player,
+    emails,
+    position,
+  }));
   rosterImportConfirm.disabled = true;
   try {
     const { members: all } = await request<{ members: RosterMember[] }>(

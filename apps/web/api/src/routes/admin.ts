@@ -7,6 +7,7 @@ import {
   parseRosterText,
   parseScheduleText,
   rosterInputSchema,
+  rosterMemberUpdateSchema,
   withData,
 } from "@soccer/shared";
 import { z } from "zod";
@@ -19,6 +20,7 @@ import {
   releaseClaim,
   removeGame,
   removeRosterMember,
+  updateRosterMember,
 } from "../lib/admin.js";
 import { json, parseBody, parseParam, toErrorResponse } from "../lib/http.js";
 import { importGames, previewImport, previewRosterImport } from "../lib/import.js";
@@ -179,6 +181,28 @@ app.http("coach-roster-parse", {
       const text = await extractPdfText(new Uint8Array(await request.arrayBuffer()));
       const parsed = parseRosterText(text);
       return json(200, await withData((repo) => previewRosterImport(repo, parsed)));
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+app.http("coach-roster-edit", {
+  route: "coach/roster/{player}",
+  methods: ["PUT"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const player = parseParam(
+        decodeURIComponent(request.params.player ?? ""),
+        z.string().trim().min(1).max(60),
+        "player",
+      );
+      const input = await parseBody(request, rosterMemberUpdateSchema);
+      return json(200, {
+        members: await withData((repo) => updateRosterMember(repo, player, input)),
+      });
     } catch (error) {
       return toErrorResponse(error, context);
     }

@@ -4,6 +4,7 @@ import {
   gameIdSchema,
   loadConfig,
   newGameInputSchema,
+  parseRosterText,
   parseScheduleText,
   rosterInputSchema,
   withData,
@@ -12,6 +13,7 @@ import { z } from "zod";
 import {
   addGame,
   addRosterMembers,
+  updateGame,
   listAdminGames,
   listRoster,
   releaseClaim,
@@ -19,7 +21,7 @@ import {
   removeRosterMember,
 } from "../lib/admin.js";
 import { json, parseBody, parseParam, toErrorResponse } from "../lib/http.js";
-import { importGames, previewImport } from "../lib/import.js";
+import { importGames, previewImport, previewRosterImport } from "../lib/import.js";
 import { extractPdfText } from "../lib/schedule-pdf.js";
 import { requireAdmin } from "../lib/principal.js";
 
@@ -143,6 +145,40 @@ app.http("coach-games-bulk", {
       const input = await parseBody(request, bulkGamesInputSchema);
       const written = await withData((repo) => importGames(repo, input.games));
       return json(201, { imported: written.length });
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+app.http("coach-game-edit", {
+  route: "coach/games/{id}",
+  methods: ["PUT"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const id = parseParam(request.params.id, gameIdSchema, "game id");
+      const input = await parseBody(request, newGameInputSchema);
+      return json(200, await withData((repo) => updateGame(repo, id, input)));
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+// Roster import, same two steps as the schedule: preview from the PDF, then the existing
+// POST coach/roster writes the confirmed members.
+app.http("coach-roster-parse", {
+  route: "coach/roster/parse",
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const text = await extractPdfText(new Uint8Array(await request.arrayBuffer()));
+      const parsed = parseRosterText(text);
+      return json(200, await withData((repo) => previewRosterImport(repo, parsed)));
     } catch (error) {
       return toErrorResponse(error, context);
     }

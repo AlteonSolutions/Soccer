@@ -2,7 +2,12 @@
  * The coach's page: add and remove games, see every sign-up with its email, release a slot.
  * Reached only through SWA authentication with the `admin` role; the API checks again.
  */
-import type { AdminGame, ImportPreview, RosterMember } from "@soccer/shared/schemas";
+import type {
+  AdminGame,
+  ImportPreview,
+  RosterImportPreview,
+  RosterMember,
+} from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
 import { formatDate, formatKickoff } from "./lib/format.js";
 import { parseRosterLines } from "./lib/roster.js";
@@ -17,6 +22,12 @@ const importRows = document.getElementById("import-rows") as HTMLTableSectionEle
 const importSkipped = document.getElementById("import-skipped") as HTMLParagraphElement;
 const importConfirm = document.getElementById("import-confirm") as HTMLButtonElement;
 const importCancel = document.getElementById("import-cancel") as HTMLButtonElement;
+const rosterImportForm = document.getElementById("roster-import-form") as HTMLFormElement;
+const rosterPreview = document.getElementById("roster-preview") as HTMLDivElement;
+const rosterPreviewRows = document.getElementById("roster-preview-rows") as HTMLTableSectionElement;
+const rosterPreviewNotes = document.getElementById("roster-preview-notes") as HTMLParagraphElement;
+const rosterImportConfirm = document.getElementById("roster-import-confirm") as HTMLButtonElement;
+const rosterImportCancel = document.getElementById("roster-import-cancel") as HTMLButtonElement;
 const rosterForm = document.getElementById("add-roster") as HTMLFormElement;
 
 function setStatus(text: string, isError = false): void {
@@ -65,6 +76,12 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   tr.append(when, cell(game.claim ? game.claim.player : "—"), email);
   const actions = document.createElement("td");
   actions.className = "actions";
+  // Not actionButton: that helper reloads the table after the click, which would erase the editor.
+  const edit = document.createElement("button");
+  edit.className = "secondary";
+  edit.textContent = "Edit";
+  edit.addEventListener("click", () => void editRow(tr, game));
+  actions.append(edit);
   if (game.claim) {
     actions.append(
       actionButton("Release Slot", "secondary", () =>
@@ -81,6 +98,52 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   );
   tr.append(actions);
   return tr;
+}
+
+/** Swap a schedule row for inline inputs; Save sends the edit, Cancel redraws the row. */
+async function editRow(tr: HTMLTableRowElement, game: AdminGame): Promise<void> {
+  tr.replaceChildren();
+  const editor = document.createElement("td");
+  editor.colSpan = 3;
+  editor.innerHTML = `
+    <form class="row-edit">
+      <label>Date <input name="date" type="date" required /></label>
+      <label>Kickoff <input name="kickoff" type="time" required /></label>
+      <label>Opponent <input name="opponent" required maxlength="80" /></label>
+    </form>`;
+  const form = editor.querySelector("form") as HTMLFormElement;
+  (form.elements.namedItem("date") as HTMLInputElement).value = game.date;
+  (form.elements.namedItem("kickoff") as HTMLInputElement).value = game.kickoff;
+  (form.elements.namedItem("opponent") as HTMLInputElement).value = game.opponent;
+  const actions = document.createElement("td");
+  actions.className = "actions";
+  const save = document.createElement("button");
+  save.className = "primary";
+  save.textContent = "Save";
+  save.addEventListener("click", async () => {
+    if (!form.reportValidity()) return;
+    const data = new FormData(form);
+    save.disabled = true;
+    try {
+      await request("PUT", `/api/coach/games/${game.id}`, {
+        date: String(data.get("date") ?? ""),
+        kickoff: String(data.get("kickoff") ?? ""),
+        opponent: String(data.get("opponent") ?? ""),
+      });
+      await load();
+      setStatus("Game updated.");
+    } catch (error) {
+      report(error, "Could not save that game.");
+      save.disabled = false;
+    }
+  });
+  const cancel = document.createElement("button");
+  cancel.className = "secondary";
+  cancel.textContent = "Cancel";
+  cancel.addEventListener("click", () => tr.replaceWith(renderRow(game)));
+  actions.append(save, cancel);
+  tr.append(editor, actions);
+  (form.elements.namedItem("opponent") as HTMLInputElement).focus();
 }
 
 function renderMember(member: RosterMember): HTMLLIElement {
@@ -262,6 +325,107 @@ importCancel.addEventListener("click", () => {
   importPreview.hidden = true;
   importForm.reset();
   pendingImport = undefined;
+  setStatus("");
+});
+
+// ---- Roster import: upload → preview → confirm, writing through the same endpoint as the paste box.
+let pendingRoster: RosterImportPreview | undefined;
+const ROSTER_LABEL = { new: "Add", unchanged: "Keep As Is", changed: "Update Emails" } as const;
+
+function renderRosterPreview(preview: RosterImportPreview): void {
+  pendingRoster = preview;
+  rosterPreviewRows.replaceChildren(
+    ...preview.members.map((m) => {
+      const tr = document.createElement("tr");
+      const emails = cell(m.emails.join(", "));
+      emails.className = "mono";
+      tr.append(cell(m.player), emails);
+      const status = document.createElement("td");
+      const pill = document.createElement("span");
+      pill.className = `pill ${m.status === "unchanged" ? "played" : "taken"}`;
+      pill.textContent = ROSTER_LABEL[m.status];
+      status.append(pill);
+      tr.append(status);
+      return tr;
+    }),
+  );
+  const notes: string[] = [];
+  if (preview.no_email.length)
+    notes.push(`No email in the PDF for ${preview.no_email.join(", ")} — add them by hand below.`);
+  if (preview.truncated.length)
+    notes.push(`Only the first four addresses were kept for ${preview.truncated.join(", ")}.`);
+  rosterPreviewNotes.hidden = notes.length === 0;
+  rosterPreviewNotes.textContent = notes.join(" ");
+  const toWrite = preview.members.filter((m) => m.status !== "unchanged").length;
+  rosterImportConfirm.textContent =
+    toWrite === 0 ? "Nothing To Import" : `Import ${toWrite} Player${toWrite === 1 ? "" : "s"}`;
+  rosterImportConfirm.disabled = toWrite === 0;
+  rosterPreview.hidden = false;
+}
+
+rosterImportForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const file = (rosterImportForm.querySelector("input[name=pdf]") as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const submit = rosterImportForm.querySelector("button[type=submit]") as HTMLButtonElement;
+  submit.disabled = true;
+  setStatus("Reading the roster…");
+  try {
+    const response = await fetch("/api/coach/roster/parse", {
+      method: "POST",
+      headers: { "content-type": "application/pdf" },
+      body: file,
+    });
+    const payload: unknown = await response.json().catch(() => undefined);
+    if (!response.ok) {
+      const error = (payload as { error?: { message?: string } } | undefined)?.error;
+      throw new RequestError("PARSE", error?.message ?? "Could not read that file.");
+    }
+    const preview = payload as RosterImportPreview;
+    renderRosterPreview(preview);
+    const found = preview.members.length + preview.no_email.length;
+    setStatus(
+      found === 0
+        ? "No players were found in that PDF. Is it the league roster?"
+        : `Found ${found} player${found === 1 ? "" : "s"}. Check the list, then import.`,
+      found === 0,
+    );
+  } catch (error) {
+    report(error, "Could not read that file.");
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+rosterImportConfirm.addEventListener("click", async () => {
+  if (!pendingRoster) return;
+  const members = pendingRoster.members
+    .filter((m) => m.status !== "unchanged")
+    .map(({ player, emails }) => ({ player, emails }));
+  rosterImportConfirm.disabled = true;
+  try {
+    const { members: all } = await request<{ members: RosterMember[] }>(
+      "POST",
+      "/api/coach/roster",
+      { members },
+    );
+    rosterPreview.hidden = true;
+    rosterImportForm.reset();
+    pendingRoster = undefined;
+    renderRoster(all);
+    setStatus(
+      `Imported ${members.length} player${members.length === 1 ? "" : "s"}. ${all.length} on the team list.`,
+    );
+  } catch (error) {
+    report(error, "Could not import the players.");
+    rosterImportConfirm.disabled = false;
+  }
+});
+
+rosterImportCancel.addEventListener("click", () => {
+  rosterPreview.hidden = true;
+  rosterImportForm.reset();
+  pendingRoster = undefined;
   setStatus("");
 });
 

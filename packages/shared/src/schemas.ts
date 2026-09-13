@@ -113,6 +113,25 @@ export const rosterInputSchema = z
   .strict();
 export type RosterInput = z.infer<typeof rosterInputSchema>;
 
+/** One row of the roster import preview. */
+export const rosterPreviewRowSchema = z
+  .object({
+    player: playerName,
+    emails: emailList,
+    status: z.enum(["new", "unchanged", "changed"]),
+  })
+  .strict();
+export type RosterPreviewRow = z.infer<typeof rosterPreviewRowSchema>;
+
+export const rosterImportPreviewSchema = z
+  .object({
+    members: z.array(rosterPreviewRowSchema),
+    no_email: z.array(playerName),
+    truncated: z.array(playerName),
+  })
+  .strict();
+export type RosterImportPreview = z.infer<typeof rosterImportPreviewSchema>;
+
 /** Every error the API returns has this shape; the client renders `message`, logs `code`. */
 export const apiErrorSchema = z
   .object({ error: z.object({ code: z.string(), message: z.string() }).strict() })

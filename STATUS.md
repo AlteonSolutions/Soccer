@@ -7,7 +7,7 @@ _Written to be read cold. Update it in the same commit as the change it describe
 **What exists.** The whole first version, gated and tested, nothing in Azure yet.
 
 - `apps/web` — the public schedule with pick-a-player sign-up (no email typed), the coach's admin
-  page (schedule import from the league's PDF, team list), and the HTTP API as Azure Functions. Built into `dist/` by esbuild and deployed as one Static Web App (Free tier).
+  page (schedule and roster import from the league's PDFs, inline game editing, team list), and the HTTP API as Azure Functions. Built into `dist/` by esbuild and deployed as one Static Web App (Free tier).
 - The daily reminder run is `POST /api/jobs/reminders` in the web API, behind a shared key, called
   by a Logic App once a day. Monday: reminder to the family on snacks this week, nudge to the
   coach if nobody is. Thursday: reminder about Saturday's game to every address on the team list.
@@ -16,7 +16,7 @@ _Written to be read cold. Update it in the same commit as the change it describe
 - `infra/main.bicep` — every Azure resource, at the lowest tier. **Applied 2026-09-12** to `snaccer-rg`.
 - Specs: `docs/spec/snack-signup.md`, `docs/spec/reminder-emails.md`.
 
-**What is verified.** `pnpm run gate` passes: typecheck of every package, lint, format, 62 tests.
+**What is verified.** `pnpm run gate` passes: typecheck of every package, lint, format, 71 tests.
 The Table Storage repo round-trips against Azurite, roster included. Both Function Apps build to a
 single file. The public and admin pages have been driven in headless Chromium against the real
 client bundle and handler logic (in-memory storage) and screenshotted at desktop and phone width.

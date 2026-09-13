@@ -20,7 +20,10 @@ coverage/
 *.mdb
 *.accdb
 *.bak
+# The league schedule PDF carries coaches' phone numbers and emails. Only the made-up fixture is allowed.
+*.pdf
 !test/fixtures/*.csv
+!apps/web/test/fixtures/schedule-sample.pdf
 
 # Local emulator state and Functions-host settings; both machine-local, never shared.
 .azurite/

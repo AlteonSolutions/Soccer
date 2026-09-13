@@ -23,6 +23,7 @@ apps/web/               one Azure Static Web App
   client/logo.svg       the header badge — swap this one file for a logo you are licensed to use
   api/src/routes/       thin HTTP entry points (Azure Functions v4); every route is imported in index.ts
   api/src/lib/          the logic behind them, framework-free, tested directly
+  api/src/lib/schedule-pdf.ts  the league PDF's text layer (unpdf); parsing is in packages/shared
   api/src/routes/jobs.ts POST /api/jobs/reminders — the daily job, called by a Logic App with a shared key
   build.mjs             esbuild → dist/client (app_location) and dist/api (api_location)
 packages/shared/        @soccer/shared — consumed as source by every app
@@ -31,6 +32,7 @@ packages/shared/        @soccer/shared — consumed as source by every app
   src/data.ts           withData(): the only door to Table Storage; the raw client is not exported
   src/email.ts          ACS email behind EMAIL_LIVE, capture by default
   src/snacks.ts         the sign-up and reminder rules as pure functions
+  src/schedule-import.ts  the league schedule PDF's lines → games, pure and tested
   src/reminders.ts      the daily run: Monday snack reminder, Thursday team reminder
 infra/main.bicep        every Azure resource (not yet applied — see its first line)
 docs/spec/              what each feature does · docs/runbooks/ how to operate it
@@ -50,6 +52,8 @@ pnpm workspaces, one lockfile. Node 22 is pinned in `package.json` `engines`, `c
   esbuild into one file, so the platform installs nothing and `workspace:` deps are no problem.
 - **Entry points stay thin.** `api/src/routes/` registers functions; `api/src/lib/` does the work
   with a `DataRepo` and a `SendEmail` passed in, so tests use the in-memory repo and captured email.
+- **The season comes from the league's PDF.** Upload it on the admin page, check the preview,
+  import. Re-importing updates kickoffs in place and keeps sign-ups.
 - **Privacy by type.** `publicGameSchema` has a name, not an email. The admin page is gated by an
   SWA route rule; the admin API by `requireAdmin`, reading the principal header SWA sets.
 - **Email never fails the primary action** and never leaves the building until `EMAIL_LIVE=on`.

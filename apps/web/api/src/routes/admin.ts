@@ -1,5 +1,13 @@
 import { app, type HttpRequest, type InvocationContext } from "@azure/functions";
-import { gameIdSchema, newGameInputSchema, rosterInputSchema, withData } from "@soccer/shared";
+import {
+  bulkGamesInputSchema,
+  gameIdSchema,
+  loadConfig,
+  newGameInputSchema,
+  parseScheduleText,
+  rosterInputSchema,
+  withData,
+} from "@soccer/shared";
 import { z } from "zod";
 import {
   addGame,
@@ -11,6 +19,8 @@ import {
   removeRosterMember,
 } from "../lib/admin.js";
 import { json, parseBody, parseParam, toErrorResponse } from "../lib/http.js";
+import { importGames, previewImport } from "../lib/import.js";
+import { extractPdfText } from "../lib/schedule-pdf.js";
 import { requireAdmin } from "../lib/principal.js";
 
 // Routes are "coach/…", not "admin/…": Static Web Apps forwards /api/* to the Functions host with
@@ -98,6 +108,41 @@ app.http("admin-roster-member", {
       );
       await withData((repo) => removeRosterMember(repo, player));
       return json(204, undefined);
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+// Step one of the import: the PDF's bytes in, a preview out. Nothing is written.
+app.http("coach-schedule-parse", {
+  route: "coach/schedule/parse",
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const { TEAM_NAME } = loadConfig();
+      const text = await extractPdfText(new Uint8Array(await request.arrayBuffer()));
+      const parsed = parseScheduleText(text, TEAM_NAME);
+      return json(200, await withData((repo) => previewImport(repo, parsed)));
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+// Step two: the coach confirmed the preview; write those games.
+app.http("coach-games-bulk", {
+  route: "coach/games/bulk",
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const input = await parseBody(request, bulkGamesInputSchema);
+      const written = await withData((repo) => importGames(repo, input.games));
+      return json(201, { imported: written.length });
     } catch (error) {
       return toErrorResponse(error, context);
     }

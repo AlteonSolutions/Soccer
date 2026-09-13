@@ -19,7 +19,6 @@ describe("admin", () => {
       date: "2026-09-19",
       kickoff: "10:00",
       opponent: "Red Dragons",
-      location: "Field 3",
       notes: "",
     });
     expect(added.id).toBe("2026-09-19-red-dragons");

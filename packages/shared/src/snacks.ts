@@ -71,7 +71,6 @@ export function toPublicSchedule(games: readonly Game[], claims: readonly Claim[
     date: game.date,
     kickoff: game.kickoff,
     opponent: game.opponent,
-    location: game.location,
     snack_by: byGame.get(game.id)?.player ?? null,
   }));
 }
@@ -145,7 +144,7 @@ export interface EmailCopy {
 }
 
 export function describeGame(game: Game): string {
-  return `${game.date} at ${game.kickoff} vs ${game.opponent}, ${game.location}`;
+  return `${game.date} at ${game.kickoff} vs ${game.opponent}`;
 }
 
 export function confirmationEmail(

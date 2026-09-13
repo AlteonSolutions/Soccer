@@ -2,7 +2,7 @@
  * The coach's page: add and remove games, see every sign-up with its email, release a slot.
  * Reached only through SWA authentication with the `admin` role; the API checks again.
  */
-import type { AdminGame, RosterMember } from "@soccer/shared/schemas";
+import type { AdminGame, ImportPreview, RosterMember } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
 import { formatDate, formatKickoff } from "./lib/format.js";
 import { parseRosterLines } from "./lib/roster.js";
@@ -11,6 +11,12 @@ const status = document.getElementById("status") as HTMLParagraphElement;
 const rows = document.getElementById("rows") as HTMLTableSectionElement;
 const addForm = document.getElementById("add-game") as HTMLFormElement;
 const rosterList = document.getElementById("roster") as HTMLUListElement;
+const importForm = document.getElementById("import-form") as HTMLFormElement;
+const importPreview = document.getElementById("import-preview") as HTMLDivElement;
+const importRows = document.getElementById("import-rows") as HTMLTableSectionElement;
+const importSkipped = document.getElementById("import-skipped") as HTMLParagraphElement;
+const importConfirm = document.getElementById("import-confirm") as HTMLButtonElement;
+const importCancel = document.getElementById("import-cancel") as HTMLButtonElement;
 const rosterForm = document.getElementById("add-roster") as HTMLFormElement;
 
 function setStatus(text: string, isError = false): void {
@@ -54,10 +60,6 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   const when = cell(
     `${formatDate(game.date)} · ${formatKickoff(game.kickoff)} vs ${game.opponent}`,
   );
-  const sub = document.createElement("span");
-  sub.className = "sub";
-  sub.textContent = game.location;
-  when.append(sub);
   const email = cell(game.claim ? game.emails.join(", ") || "not on the team list" : "—");
   email.className = "mono";
   tr.append(when, cell(game.claim ? game.claim.player : "—"), email);
@@ -160,7 +162,6 @@ addForm.addEventListener("submit", async (event) => {
       date: String(data.get("date") ?? ""),
       kickoff: String(data.get("kickoff") ?? ""),
       opponent: String(data.get("opponent") ?? ""),
-      location: String(data.get("location") ?? ""),
     });
     addForm.reset();
     await load();
@@ -169,6 +170,99 @@ addForm.addEventListener("submit", async (event) => {
   } finally {
     submit.disabled = false;
   }
+});
+
+// ---- Schedule import: upload → preview → confirm. The server parses; the page only shows.
+let pendingImport: ImportPreview | undefined;
+
+const IMPORT_LABEL = { new: "Add", unchanged: "Keep As Is", changed: "Update Kickoff" } as const;
+
+function renderImportPreview(preview: ImportPreview): void {
+  pendingImport = preview;
+  importRows.replaceChildren(
+    ...preview.games.map((g) => {
+      const tr = document.createElement("tr");
+      tr.append(cell(formatDate(g.date)), cell(formatKickoff(g.kickoff)), cell(g.opponent));
+      const status = document.createElement("td");
+      const pill = document.createElement("span");
+      pill.className = `pill ${g.status === "unchanged" ? "played" : "taken"}`;
+      pill.textContent = IMPORT_LABEL[g.status];
+      status.append(pill);
+      tr.append(status);
+      return tr;
+    }),
+  );
+  importSkipped.hidden = preview.skipped.length === 0;
+  importSkipped.textContent =
+    preview.skipped.length === 0
+      ? ""
+      : `Could not read ${preview.skipped.length} line${preview.skipped.length === 1 ? "" : "s"}: ${preview.skipped.join(" · ")}`;
+  const toWrite = preview.games.filter((g) => g.status !== "unchanged").length;
+  importConfirm.textContent =
+    toWrite === 0 ? "Nothing To Import" : `Import ${toWrite} Game${toWrite === 1 ? "" : "s"}`;
+  importConfirm.disabled = toWrite === 0;
+  importPreview.hidden = false;
+}
+
+importForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const file = (importForm.querySelector("input[name=pdf]") as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const submit = importForm.querySelector("button[type=submit]") as HTMLButtonElement;
+  submit.disabled = true;
+  setStatus("Reading the schedule…");
+  try {
+    const response = await fetch("/api/coach/schedule/parse", {
+      method: "POST",
+      headers: { "content-type": "application/pdf" },
+      body: file,
+    });
+    const payload: unknown = await response.json().catch(() => undefined);
+    if (!response.ok) {
+      const error = (payload as { error?: { message?: string } } | undefined)?.error;
+      throw new RequestError("PARSE", error?.message ?? "Could not read that file.");
+    }
+    const preview = payload as ImportPreview;
+    renderImportPreview(preview);
+    setStatus(
+      preview.games.length === 0
+        ? "No games were found in that PDF. Is it the league schedule?"
+        : `Found ${preview.games.length} game${preview.games.length === 1 ? "" : "s"}. Check the list, then import.`,
+      preview.games.length === 0,
+    );
+  } catch (error) {
+    report(error, "Could not read that file.");
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+importConfirm.addEventListener("click", async () => {
+  if (!pendingImport) return;
+  const games = pendingImport.games
+    .filter((g) => g.status !== "unchanged")
+    .map(({ date, kickoff, opponent }) => ({ date, kickoff, opponent }));
+  importConfirm.disabled = true;
+  try {
+    const { imported } = await request<{ imported: number }>("POST", "/api/coach/games/bulk", {
+      games,
+    });
+    importPreview.hidden = true;
+    importForm.reset();
+    pendingImport = undefined;
+    await load();
+    setStatus(`Imported ${imported} game${imported === 1 ? "" : "s"}.`);
+  } catch (error) {
+    report(error, "Could not import the games.");
+    importConfirm.disabled = false;
+  }
+});
+
+importCancel.addEventListener("click", () => {
+  importPreview.hidden = true;
+  importForm.reset();
+  pendingImport = undefined;
+  setStatus("");
 });
 
 void load();

@@ -22,12 +22,43 @@
     <main>
       <p id="status" class="status">Loading…</p>
       <section class="card">
+        <h2>Import The Schedule</h2>
+        <p class="hint">
+          Upload the league's schedule PDF. The games are read from it and shown here first; nothing
+          changes until you click Import. Re-uploading a corrected PDF updates kickoff times in
+          place and keeps every sign-up.
+        </p>
+        <form id="import-form" class="import-form">
+          <input name="pdf" type="file" accept="application/pdf,.pdf" required />
+          <button type="submit" class="primary">Read Schedule</button>
+        </form>
+        <div id="import-preview" hidden>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Kickoff</th>
+                  <th>Opponent</th>
+                  <th>Import Would</th>
+                </tr>
+              </thead>
+              <tbody id="import-rows"></tbody>
+            </table>
+          </div>
+          <p id="import-skipped" class="hint" hidden></p>
+          <div class="actions">
+            <button id="import-confirm" type="button" class="primary">Import Games</button>
+            <button id="import-cancel" type="button" class="secondary">Cancel</button>
+          </div>
+        </div>
+      </section>
+      <section class="card">
         <h2>Add A Game</h2>
         <form id="add-game" class="admin-form">
           <label>Date <input name="date" type="date" required /></label>
           <label>Kickoff <input name="kickoff" type="time" required /></label>
           <label>Opponent <input name="opponent" required maxlength="80" /></label>
-          <label>Location <input name="location" required maxlength="120" /></label>
           <button type="submit" class="primary">Add Game</button>
         </form>
       </section>

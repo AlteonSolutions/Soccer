@@ -23,7 +23,6 @@ export const gameSchema = z
     date: z.iso.date(),
     kickoff: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Expected HH:MM (24-hour)"),
     opponent: z.string().trim().min(1).max(80),
-    location: z.string().trim().min(1).max(120),
     // Table Storage cannot store null: a game not yet announced has no column, so absent = null.
     team_reminded_at: z.iso.datetime().nullable().default(null),
   })
@@ -33,6 +32,27 @@ export type Game = z.infer<typeof gameSchema>;
 /** What the coach submits to add a game; the id is derived from date and opponent. */
 export const newGameInputSchema = gameSchema.omit({ id: true, team_reminded_at: true });
 export type NewGameInput = z.infer<typeof newGameInputSchema>;
+
+/** A season pasted in at once: the PDF import. 60 is more than any rec season has games. */
+export const bulkGamesInputSchema = z
+  .object({ games: z.array(newGameInputSchema).min(1).max(60) })
+  .strict();
+export type BulkGamesInput = z.infer<typeof bulkGamesInputSchema>;
+
+/** One row of the import preview: what was read, and what importing it would do. */
+export const importPreviewRowSchema = newGameInputSchema
+  .extend({ id: gameIdSchema, status: z.enum(["new", "unchanged", "changed"]) })
+  .strict();
+export type ImportPreviewRow = z.infer<typeof importPreviewRowSchema>;
+
+export const importPreviewSchema = z
+  .object({
+    games: z.array(importPreviewRowSchema),
+    /** Lines that looked like they might be games but could not be read. Shown to the coach. */
+    skipped: z.array(z.string()),
+  })
+  .strict();
+export type ImportPreview = z.infer<typeof importPreviewSchema>;
 
 /** What a parent submits to claim a game's snack slot: which player, chosen from the team list. */
 export const claimInputSchema = z

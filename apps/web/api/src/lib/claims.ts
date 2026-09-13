@@ -95,7 +95,6 @@ export async function createClaim(
       date: game.date,
       kickoff: game.kickoff,
       opponent: game.opponent,
-      location: game.location,
       snack_by: claim.player,
     },
     confirmation_sent: confirmationSent,

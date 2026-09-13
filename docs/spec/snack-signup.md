@@ -10,6 +10,22 @@ signed up. There
 are no parent accounts: the site is public, and a sign-up is picking the player from the team list
 and confirming. No email is typed anywhere on the public site.
 
+## The schedule
+
+The coach uploads the league's schedule PDF on the admin page ("Import The Schedule"). The API
+reads its text layer (`unpdf`, pure JavaScript, bundled into the Functions app) and
+`parseScheduleText` in `packages/shared` turns lines like
+`09/19/2026 11:50AM Manchester City versus Chelsea ZH - Monger Park - U10 Field` into games:
+date, kickoff (24-hour), opponent (whichever side of "versus" is not us). Location is dropped: every
+game is at the same field. The page shows a preview — Add, Update Kickoff, or Keep As Is per game,
+plus any date-shaped line that could not be read — and nothing is written until the coach clicks
+Import. A game's id is its date and opponent, so re-importing a corrected PDF updates kickoffs in
+place, keeps every sign-up, and never re-sends the Thursday email for a game already announced.
+The one-game form stays for corrections the league never issues a PDF for.
+
+The league's PDF carries the coaches' phone numbers and emails, so it is never committed; the test
+fixture is a PDF printed from HTML in the same layout with made-up people.
+
 ## Rules
 
 - One family per game. The first sign-up wins; a second attempt is told "Someone else just signed
@@ -41,10 +57,11 @@ The header badge is `apps/web/client/logo.svg`, an original design in those colo
 crest is Manchester City FC's trademark and is not copied here. To use an official logo you are
 licensed to use, replace that one file; nothing else references it by content.
 
-- `/` — the schedule. Title Case headings. Each game: date, kickoff, opponent, location,
+- `/` — the schedule. Title Case headings. Each game: date, kickoff, opponent,
   and either "Snacks: _Player_" or a **Sign Up** button that opens the picker and confirm step.
 - `/admin/` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Add A
-  Game; the table of games with sign-ups and emails; Release Slot; Remove Game; the Team List
+  The Schedule (PDF upload, preview, import); Add A Game; the table of games with sign-ups and
+  emails; Release Slot; Remove Game; the Team List
   (one line per player: name, then up to four parent emails; re-adding a player replaces them).
 - `/login`, `/logout` — redirects to the SWA auth endpoints.
 
@@ -56,6 +73,8 @@ licensed to use, replace that one file; nothing else references it by content.
 | `POST /api/claims` | anyone | `{ game_id, player }` → `201 { game: PublicGame, confirmation_sent }` |
 | `GET /api/coach/games` | admin | `{ games: AdminGame[] }` (emails included) |
 | `POST /api/coach/games` | admin | `NewGameInput` → `201 Game` |
+| `POST /api/coach/schedule/parse` | admin | PDF bytes (≤5 MB) → `ImportPreview` (no write) |
+| `POST /api/coach/games/bulk` | admin | `{ games: NewGameInput[] }` (≤60) → `201 { imported }` |
 | `DELETE /api/coach/games/{id}` | admin | `204` |
 | `DELETE /api/coach/claims/{gameId}` | admin | `204` |
 | `GET /api/coach/roster` | admin | `{ members: RosterMember[] }` |

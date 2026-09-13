@@ -75,13 +75,18 @@ describe("withData against Azurite", async () => {
       try {
         await withData((repo) =>
           repo.addRosterMembers([
-            { player: odd, emails: ["odd@example.com"], added_at },
-            { player: plain, emails: ["plain@example.com"], added_at },
+            { player: odd, emails: ["odd@example.com"], added_at, position: 7 },
+            { player: plain, emails: ["plain@example.com"], added_at, position: 8 },
           ]),
         );
         await withData((repo) =>
           repo.addRosterMembers([
-            { player: plain.toUpperCase(), emails: ["corrected@example.com"], added_at },
+            {
+              player: plain.toUpperCase(),
+              emails: ["corrected@example.com"],
+              added_at,
+              position: 8,
+            },
           ]),
         );
         expect((await withData((repo) => repo.getRosterMember(odd)))?.emails).toEqual([

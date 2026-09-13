@@ -75,9 +75,14 @@ export function toPublicSchedule(games: readonly Game[], claims: readonly Claim[
   }));
 }
 
-/** Player names for the sign-up picker, sorted, and nothing else from the roster. */
+/** The team list in the league's order (position), name as the tie-break for older rows. */
+export function sortRoster(roster: readonly RosterMember[]): RosterMember[] {
+  return [...roster].sort((a, b) => a.position - b.position || a.player.localeCompare(b.player));
+}
+
+/** Player names for the sign-up picker, in roster order, and nothing else from the roster. */
 export function toPlayerNames(roster: readonly RosterMember[]): string[] {
-  return roster.map((m) => m.player).sort((a, b) => a.localeCompare(b));
+  return sortRoster(roster).map((m) => m.player);
 }
 
 /** The addresses for one player, looked up on the team list at send time; [] if they left the team. */

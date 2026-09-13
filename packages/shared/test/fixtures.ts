@@ -26,6 +26,7 @@ export function member(overrides: Partial<RosterMember> = {}): RosterMember {
     player: "Leo Rivera",
     emails: ["sam@example.com"],
     added_at: "2026-08-20T00:00:00.000Z",
+    position: 0,
     ...overrides,
   };
 }

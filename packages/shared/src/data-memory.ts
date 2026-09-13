@@ -51,6 +51,10 @@ export function createMemoryRepo(
       const existing = claims.get(gameId);
       if (existing) claims.set(gameId, { ...existing, reminded_at: at });
     },
+    async updateClaimPlayer(gameId, player) {
+      const existing = claims.get(gameId);
+      if (existing) claims.set(gameId, { ...existing, player });
+    },
     async markTeamReminded(gameId, at) {
       const existing = games.get(gameId);
       if (existing) games.set(gameId, { ...existing, team_reminded_at: at });

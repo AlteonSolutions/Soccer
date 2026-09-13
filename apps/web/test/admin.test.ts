@@ -8,6 +8,7 @@ import {
   removeGame,
   removeRosterMember,
   updateGame,
+  updateRosterMember,
 } from "../api/src/lib/admin.js";
 import { claim, game, member } from "../../../packages/shared/test/fixtures.js";
 
@@ -43,7 +44,7 @@ describe("admin", () => {
     expect(await repo.getGame(game().id)).toBeDefined();
   });
 
-  it("adds pasted players sorted by name, lets a re-add correct the email, and removes by name", async () => {
+  it("adds pasted players in roster order, lets a re-add correct the email, and removes by name", async () => {
     const repo = createMemoryRepo();
     const now = new Date("2026-09-01T00:00:00Z");
     const members = await addRosterMembers(
@@ -58,8 +59,8 @@ describe("admin", () => {
       now,
     );
     expect(members.map((m) => `${m.player} ${m.emails.join("+")}`)).toEqual([
-      "leo rivera rivera@example.com+dad@example.com",
       "Mia Chen chen@example.com",
+      "leo rivera rivera@example.com+dad@example.com",
     ]);
     await removeRosterMember(repo, "Leo Rivera");
     expect((await repo.listRoster()).map((m) => m.player)).toEqual(["Mia Chen"]);
@@ -101,5 +102,61 @@ describe("admin", () => {
       updateGame(repo, game().id, { date: "2026-09-26", kickoff: "10:00", opponent: "Everton" }),
     ).rejects.toMatchObject({ code: "VALIDATION" });
     expect(await repo.getGame(game().id)).toBeDefined();
+  });
+
+  it("keeps the league's order: imported positions win, hand-added players append", async () => {
+    const repo = createMemoryRepo();
+    const now = new Date("2026-09-01T00:00:00Z");
+    await addRosterMembers(
+      repo,
+      {
+        members: [
+          { player: "Zed Last", emails: ["z@example.com"], position: 1 },
+          { player: "Amy First", emails: ["a@example.com"], position: 0 },
+        ],
+      },
+      now,
+    );
+    const list = await addRosterMembers(
+      repo,
+      { members: [{ player: "Bo Added", emails: ["b@example.com"] }] },
+      now,
+    );
+    expect(list.map((m) => m.player)).toEqual(["Amy First", "Zed Last", "Bo Added"]);
+    expect(list.map((m) => m.position)).toEqual([0, 1, 2]);
+  });
+
+  it("edits a player's emails in place and renames them, moving their sign-ups along", async () => {
+    const repo = createMemoryRepo({
+      games: [game()],
+      claims: [claim()],
+      roster: [member({ position: 3 })],
+    });
+    const list = await updateRosterMember(repo, "leo rivera", {
+      player: "Leo Rivera-Smith",
+      emails: ["new@example.com"],
+    });
+    expect(list).toEqual([
+      {
+        player: "Leo Rivera-Smith",
+        emails: ["new@example.com"],
+        added_at: member().added_at,
+        position: 3,
+      },
+    ]);
+    expect(await repo.getRosterMember("Leo Rivera")).toBeUndefined();
+    expect((await repo.getClaim(game().id))?.player).toBe("Leo Rivera-Smith");
+  });
+
+  it("refuses a rename onto another player and an edit of an unknown player", async () => {
+    const repo = createMemoryRepo({
+      roster: [member(), member({ player: "Mia Chen", emails: ["chen@example.com"] })],
+    });
+    await expect(
+      updateRosterMember(repo, "Leo Rivera", { player: "mia chen", emails: ["x@example.com"] }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    await expect(
+      updateRosterMember(repo, "Nobody", { player: "Nobody", emails: ["x@example.com"] }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 });

@@ -24,6 +24,7 @@ coverage/
 *.pdf
 !test/fixtures/*.csv
 !apps/web/test/fixtures/schedule-sample.pdf
+!apps/web/test/fixtures/roster-sample.pdf
 
 # Local emulator state and Functions-host settings; both machine-local, never shared.
 .azurite/

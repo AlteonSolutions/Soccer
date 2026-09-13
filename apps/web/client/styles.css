@@ -441,6 +441,26 @@ footer {
   gap: 0.6rem;
   margin-top: 0.9rem;
 }
+.row-edit {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+.row-edit label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+.row-edit input {
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+}
 .hint {
   margin: -0.4rem 0 0.9rem;
   color: var(--muted);

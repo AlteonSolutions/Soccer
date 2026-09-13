@@ -11,7 +11,10 @@ import {
   type ImportPreview,
   type ImportPreviewRow,
   type NewGameInput,
+  type ParsedRoster,
   type ParsedSchedule,
+  type RosterImportPreview,
+  type RosterPreviewRow,
 } from "@soccer/shared";
 
 export async function previewImport(
@@ -43,4 +46,19 @@ export async function importGames(repo: DataRepo, games: readonly NewGameInput[]
     written.push(game);
   }
   return written;
+}
+
+/** The roster preview: each parsed player against the team list, by name, case-insensitively. */
+export async function previewRosterImport(
+  repo: DataRepo,
+  parsed: ParsedRoster,
+): Promise<RosterImportPreview> {
+  const key = (p: string) => p.trim().toLowerCase();
+  const existing = new Map((await repo.listRoster()).map((m) => [key(m.player), m]));
+  const members: RosterPreviewRow[] = parsed.members.map((m) => {
+    const current = existing.get(key(m.player));
+    const same = current && [...current.emails].sort().join() === [...m.emails].sort().join();
+    return { ...m, status: !current ? "new" : same ? "unchanged" : "changed" };
+  });
+  return { members, no_email: parsed.no_email, truncated: parsed.truncated };
 }

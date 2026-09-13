@@ -21,7 +21,18 @@ game is at the same field. The page shows a preview — Add, Update Kickoff, or 
 plus any date-shaped line that could not be read — and nothing is written until the coach clicks
 Import. A game's id is its date and opponent, so re-importing a corrected PDF updates kickoffs in
 place, keeps every sign-up, and never re-sends the Thursday email for a game already announced.
-The one-game form stays for corrections the league never issues a PDF for.
+The one-game form stays for corrections the league never issues a PDF for, and every row in the
+schedule table has Edit: date, kickoff and opponent inline, Save or Cancel. A game's id is its date
+and opponent, so editing either moves the sign-up onto the new id; an edit that would collide with
+another game is refused.
+
+The team list comes from the league's roster PDF the same way ("Read Roster PDF" → preview →
+Import): one block per player, name before the "(M)"/"(F)" marker the league prints, every email
+in the block (the second parent is on a continuation line). Parent names and phones are not
+kept — the school and the first parent's name run together, and nothing uses a parent's name. A
+player with no email in the PDF is listed in the preview for the coach to add by hand; more than
+four addresses keeps the first four and says so. The paste box remains for those and for
+mid-season additions.
 
 The league's PDF carries the coaches' phone numbers and emails, so it is never committed; the test
 fixture is a PDF printed from HTML in the same layout with made-up people.
@@ -75,6 +86,8 @@ licensed to use, replace that one file; nothing else references it by content.
 | `POST /api/coach/games` | admin | `NewGameInput` → `201 Game` |
 | `POST /api/coach/schedule/parse` | admin | PDF bytes (≤5 MB) → `ImportPreview` (no write) |
 | `POST /api/coach/games/bulk` | admin | `{ games: NewGameInput[] }` (≤60) → `201 { imported }` |
+| `PUT /api/coach/games/{id}` | admin | `NewGameInput` → `200 Game` (moves the sign-up if the id changes) |
+| `POST /api/coach/roster/parse` | admin | PDF bytes (≤5 MB) → `RosterImportPreview` (no write) |
 | `DELETE /api/coach/games/{id}` | admin | `204` |
 | `DELETE /api/coach/claims/{gameId}` | admin | `204` |
 | `GET /api/coach/roster` | admin | `{ members: RosterMember[] }` |

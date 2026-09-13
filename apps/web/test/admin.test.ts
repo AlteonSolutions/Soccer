@@ -7,6 +7,7 @@ import {
   releaseClaim,
   removeGame,
   removeRosterMember,
+  updateGame,
 } from "../api/src/lib/admin.js";
 import { claim, game, member } from "../../../packages/shared/test/fixtures.js";
 
@@ -62,5 +63,43 @@ describe("admin", () => {
     ]);
     await removeRosterMember(repo, "Leo Rivera");
     expect((await repo.listRoster()).map((m) => m.player)).toEqual(["Mia Chen"]);
+  });
+
+  it("edits a kickoff in place, keeping the id, the sign-up and the announced mark", async () => {
+    const repo = createMemoryRepo({
+      games: [game({ team_reminded_at: "2026-09-17T14:00:00.000Z" })],
+      claims: [claim()],
+    });
+    const edited = await updateGame(repo, game().id, {
+      date: "2026-09-19",
+      kickoff: "12:30",
+      opponent: "Red Dragons",
+    });
+    expect(edited.id).toBe(game().id);
+    expect(edited.team_reminded_at).toBe("2026-09-17T14:00:00.000Z");
+    expect((await repo.getClaim(game().id))?.player).toBe("Leo Rivera");
+  });
+
+  it("moves the sign-up when a date or opponent edit changes the game's id", async () => {
+    const repo = createMemoryRepo({ games: [game()], claims: [claim()] });
+    const edited = await updateGame(repo, game().id, {
+      date: "2026-09-20",
+      kickoff: "10:00",
+      opponent: "Red Dragons",
+    });
+    expect(edited.id).toBe("2026-09-20-red-dragons");
+    expect(await repo.getGame(game().id)).toBeUndefined();
+    expect(await repo.getClaim(game().id)).toBeUndefined();
+    expect((await repo.getClaim(edited.id))?.player).toBe("Leo Rivera");
+  });
+
+  it("refuses an edit that would collide with another game", async () => {
+    const repo = createMemoryRepo({
+      games: [game(), game({ id: "2026-09-26-everton", date: "2026-09-26", opponent: "Everton" })],
+    });
+    await expect(
+      updateGame(repo, game().id, { date: "2026-09-26", kickoff: "10:00", opponent: "Everton" }),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    expect(await repo.getGame(game().id)).toBeDefined();
   });
 });

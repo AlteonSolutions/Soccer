@@ -82,11 +82,35 @@
         <h2>Team List</h2>
         <p class="hint">
           Parents sign up by picking their player from this list. The player's emails get the
-          confirmation, the Monday snack reminder and the Thursday game reminder. One line per
-          player, with as many parent emails as needed:
-          <span class="mono">Player Name, mom@example.com, dad@example.com</span>. Re-adding a
+          confirmation, the Monday snack reminder and the Thursday game reminder. Upload the
+          league's roster PDF and the players and their parents' emails are read from it; a player
+          with no email in the PDF is listed for you to add by hand. Re-importing or re-adding a
           player replaces their emails. Emails are never shown outside this page.
         </p>
+        <form id="roster-import-form" class="import-form">
+          <input name="pdf" type="file" accept="application/pdf,.pdf" required />
+          <button type="submit" class="primary">Read Roster PDF</button>
+        </form>
+        <div id="roster-preview" hidden>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Emails</th>
+                  <th>Import Would</th>
+                </tr>
+              </thead>
+              <tbody id="roster-preview-rows"></tbody>
+            </table>
+          </div>
+          <p id="roster-preview-notes" class="hint" hidden></p>
+          <div class="actions">
+            <button id="roster-import-confirm" type="button" class="primary">Import Players</button>
+            <button id="roster-import-cancel" type="button" class="secondary">Cancel</button>
+          </div>
+        </div>
+        <p class="hint">Or add players by hand:</p>
         <form id="add-roster" class="roster-form">
           <textarea
             name="lines"

@@ -2,7 +2,7 @@
  * A parent signing up for a game's snack slot by picking their player from the team list. The
  * claim records the player only; the parent emails are read from the team list whenever an email
  * is sent (here, and by the Monday timer), so a corrected address is used everywhere at once. The primary action is the stored claim; the
- * confirmation email is a secondary side effect that may never fail it — a family whose
+ * confirmation email is a secondary side effect that may never fail it – a family whose
  * confirmation bounced still has the slot.
  */
 import {

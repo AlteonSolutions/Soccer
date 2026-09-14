@@ -30,13 +30,13 @@ describe("renderTemplate", () => {
       templates: {
         ...DEFAULT_TEMPLATES,
         claim_confirmation: {
-          subject: "Snacks on {{date}} — thank you!",
+          subject: "Snacks on {{date}} – thank you!",
           text: "{{player}} vs {{opponent}} at {{kickoff}}. {{site_url}}",
         },
       },
     };
     const copy = confirmationEmail(game(), claim(), site);
-    expect(copy.subject).toBe("Snacks on 2026-09-19 — thank you!");
+    expect(copy.subject).toBe("Snacks on 2026-09-19 – thank you!");
     expect(copy.text).toBe("Leo Rivera vs Red Dragons at 10:00. https://example.org");
     const nudge = unclaimedNudgeEmail([game()], site);
     expect(nudge.subject).toBe("City: 1 upcoming game(s) with no snack sign-up");

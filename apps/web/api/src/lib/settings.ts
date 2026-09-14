@@ -6,14 +6,25 @@
  */
 import {
   AppError,
+  confirmationEmail,
   DEFAULT_TEMPLATES,
   EMAIL_KINDS,
   EMAIL_TITLES,
+  isPastGame,
   loadSettings,
+  reminderEmail,
+  selectUnclaimed,
+  sortByDate,
+  teamReminderEmail,
   TEMPLATE_PLACEHOLDERS,
+  unclaimedNudgeEmail,
+  type Claim,
   type DataRepo,
+  type EmailCopy,
   type EmailKind,
+  type EmailPreviewInput,
   type EmailTemplates,
+  type Game,
   type LogoAsset,
   type Settings,
   type SettingsInput,
@@ -107,4 +118,70 @@ export async function removeLogo(repo: DataRepo, teamName: string): Promise<Sett
 
 export async function getLogo(repo: DataRepo): Promise<LogoAsset | undefined> {
   return repo.getLogo();
+}
+
+// A stand-in for a site with no games yet, so the preview always has something to fill in.
+const SAMPLE_GAME: Game = {
+  id: "2026-09-19-red-dragons",
+  date: "2026-09-19",
+  kickoff: "10:00",
+  opponent: "Red Dragons",
+  team_reminded_at: null,
+};
+
+export interface EmailPreview extends EmailCopy {
+  /** What the placeholders were filled from, so the page can say "using the game on …". */
+  based_on: { game: string; player: string };
+}
+
+/**
+ * Render one template, as typed on the admin page and not yet saved, through the same builders
+ * that send the real emails. Values come from the next game on the schedule and the family signed
+ * up for it (or the first player on the team list), so the coach sees a real email, not lorem ipsum.
+ */
+export async function previewEmail(
+  repo: DataRepo,
+  input: EmailPreviewInput,
+  siteUrl: string,
+  teamName: string,
+  today: string,
+): Promise<EmailPreview> {
+  const [games, claims, roster, settings] = await Promise.all([
+    repo.listGames(),
+    repo.listClaims(),
+    repo.listRoster(),
+    loadSettings(repo, teamName),
+  ]);
+  const game = sortByDate(games.filter((g) => !isPastGame(g, today)))[0] ?? SAMPLE_GAME;
+  const existing = claims.find((c) => c.game_id === game.id);
+  const player = existing?.player ?? roster[0]?.player ?? "Leo Rivera";
+  const claim: Claim = existing ?? {
+    game_id: game.id,
+    player,
+    created_at: `${today}T00:00:00.000Z`,
+    reminded_at: null,
+  };
+  const site = {
+    teamName: input.team_name,
+    siteUrl,
+    templates: { ...settings.templates, [input.kind]: input.template },
+  };
+  let copy: EmailCopy;
+  switch (input.kind) {
+    case "claim_confirmation":
+      copy = confirmationEmail(game, claim, site);
+      break;
+    case "snack_reminder":
+      copy = reminderEmail(game, claim, site);
+      break;
+    case "team_reminder":
+      copy = teamReminderEmail(game, existing, site);
+      break;
+    case "coach_nudge": {
+      const unclaimed = selectUnclaimed(games, claims, today);
+      copy = unclaimedNudgeEmail(unclaimed.length > 0 ? unclaimed : [game], site);
+      break;
+    }
+  }
+  return { ...copy, based_on: { game: `${game.date} vs ${game.opponent}`, player } };
 }

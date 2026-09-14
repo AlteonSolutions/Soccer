@@ -8,7 +8,7 @@
  *   Sam Example, 555-0101 (h)
  *
  * We need two things from it: the player's name and every email in the block. Parent names are
- * not kept — the school and the first parent's name run together with nothing but a space between
+ * not kept – the school and the first parent's name run together with nothing but a space between
  * them, so splitting them is guesswork, and nothing in the app uses a parent's name. Phones are
  * dropped. A player whose block has no email cannot be imported (a sign-up needs somewhere to send
  * the confirmation) and is reported, never silently skipped.
@@ -23,7 +23,7 @@ export interface ParsedRoster {
   truncated: string[];
 }
 
-// "Leo Example (M) ..." — a name, then the gender marker the league prints and we ignore.
+// "Leo Example (M) ..." – a name, then the gender marker the league prints and we ignore.
 const PLAYER_LINE = /^(.+?)\s+\((?:M|F)\)\s/;
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 // Two parents plus two more caregivers is the most any family has asked for (see schemas.ts).

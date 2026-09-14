@@ -32,7 +32,7 @@ function to24h(hour: number, minute: number, meridiem: string): string {
 /**
  * Pick the opponent out of "X versus Y": whichever side is not us. If neither side is the team
  * (a renamed team, a typo in the PDF), the side after "versus" is used and the caller sees no
- * difference — so the team name is matched loosely, case-insensitively, on a prefix.
+ * difference – so the team name is matched loosely, case-insensitively, on a prefix.
  */
 function opponentOf(left: string, right: string, teamName: string): string {
   const us = teamName.trim().toLowerCase();

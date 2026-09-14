@@ -9,7 +9,9 @@ import {
   rosterInputSchema,
   rosterMemberUpdateSchema,
   settingsInputSchema,
+  emailPreviewInputSchema,
   loadSettings,
+  localDateIso,
   withData,
 } from "@soccer/shared";
 import { z } from "zod";
@@ -28,7 +30,7 @@ import { json, parseBody, parseParam, toErrorResponse } from "../lib/http.js";
 import { importGames, previewImport, previewRosterImport } from "../lib/import.js";
 import { extractPdfText } from "../lib/schedule-pdf.js";
 import { requireAdmin } from "../lib/principal.js";
-import { getSettings, putLogo, removeLogo, updateSettings } from "../lib/settings.js";
+import { getSettings, previewEmail, putLogo, removeLogo, updateSettings } from "../lib/settings.js";
 
 // Routes are "coach/…", not "admin/…": Static Web Apps forwards /api/* to the Functions host with
 // the prefix stripped, and the host reserves /admin/* for its own management endpoints, so an
@@ -254,6 +256,29 @@ app.http("coach-logo", {
       const bytes = new Uint8Array(await request.arrayBuffer());
       const type = request.headers.get("content-type");
       return json(200, await withData((repo) => putLogo(repo, TEAM_NAME, type, bytes, new Date())));
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+// Render a template as typed, before it is saved, with values from the next real game.
+app.http("coach-settings-preview", {
+  route: "coach/settings/preview",
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const config = loadConfig();
+      const input = await parseBody(request, emailPreviewInputSchema);
+      const today = localDateIso(new Date(), config.TIMEZONE);
+      return json(
+        200,
+        await withData((repo) =>
+          previewEmail(repo, input, config.SITE_URL, config.TEAM_NAME, today),
+        ),
+      );
     } catch (error) {
       return toErrorResponse(error, context);
     }

@@ -16,7 +16,7 @@ export function formatDate(dateIso: string): string {
   });
 }
 
-/** The pieces of a calendar tile: "SEP", "19", "Sat" — from "2026-09-19", no time-zone shift. */
+/** The pieces of a calendar tile: "SEP", "19", "Sat" – from "2026-09-19", no time-zone shift. */
 export function dateParts(dateIso: string): { month: string; day: string; weekday: string } {
   const [y, m, d] = dateIso.split("-").map(Number) as [number, number, number];
   const date = new Date(y, m - 1, d);
@@ -35,7 +35,7 @@ export function formatKickoff(kickoff: string): string {
   return `${hour12}:${String(min).padStart(2, "0")} ${suffix}`;
 }
 
-/** "Snacks: The Nguyens" — a label, not a sentence, so plural family names never read wrong. */
+/** "Snacks: The Nguyens" – a label, not a sentence, so plural family names never read wrong. */
 export function describeSnack(game: Pick<PublicGame, "snack_by">): string {
   return game.snack_by ? `Snacks: ${game.snack_by}` : "Snacks: nobody yet";
 }

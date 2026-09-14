@@ -6,7 +6,7 @@
  * module-private: not exported, not reachable from tests or scripts. Anything the app needs from
  * storage is a method on `DataRepo`, added here, where the table layout is visible.
  *
- * Layout — four tables and one blob container in one storage account:
+ * Layout – four tables and one blob container in one storage account:
  *   games     partitionKey "game"     rowKey <game id>        columns = Game fields
  *   claims    partitionKey "claim"    rowKey <game id>        columns = Claim fields
  *   roster    partitionKey "member"   rowKey <player, keyed>  columns = RosterMember fields

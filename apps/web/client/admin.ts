@@ -53,6 +53,12 @@ interface SettingsResponse {
   emails: EmailKindInfo[];
 }
 
+interface EmailPreview {
+  subject: string;
+  text: string;
+  based_on: { game: string; player: string };
+}
+
 function setStatus(text: string, isError = false): void {
   status.textContent = text;
   status.className = isError ? "status error" : "status";
@@ -94,9 +100,9 @@ function renderRow(game: AdminGame): HTMLTableRowElement {
   const when = cell(
     `${formatDate(game.date)} · ${formatKickoff(game.kickoff)} vs ${game.opponent}`,
   );
-  const email = cell(game.claim ? game.emails.join(", ") || "not on the team list" : "—");
+  const email = cell(game.claim ? game.emails.join(", ") || "not on the team list" : "–");
   email.className = "mono";
-  tr.append(when, cell(game.claim ? game.claim.player : "—"), email);
+  tr.append(when, cell(game.claim ? game.claim.player : "–"), email);
   const actions = document.createElement("td");
   actions.className = "actions";
   // Not actionButton: that helper reloads the table after the click, which would erase the editor.
@@ -274,7 +280,15 @@ function renderTemplateEditors(): void {
         <label>Subject <input required maxlength="200" /></label>
         <label>Body <textarea required maxlength="4000" rows="8"></textarea></label>
         <p class="placeholders"></p>
-        <div class="actions"><button type="button" class="secondary">Reset To Default</button></div>`;
+        <div class="actions">
+          <button type="button" class="primary" data-preview>Preview</button>
+          <button type="button" class="secondary" data-reset>Reset To Default</button>
+        </div>
+        <div class="email-preview" hidden>
+          <p class="based-on"></p>
+          <p class="subject"></p>
+          <pre></pre>
+        </div>`;
       (body.querySelector("input") as HTMLInputElement).name = `${kind}.subject`;
       (body.querySelector("textarea") as HTMLTextAreaElement).name = `${kind}.text`;
       const legend = body.querySelector(".placeholders") as HTMLParagraphElement;
@@ -284,10 +298,35 @@ function renderTemplateEditors(): void {
         code.textContent = `{{${name}}}`;
         legend.append(i === 0 ? "" : " · ", code, ` ${meaning}`);
       });
-      (body.querySelector("button") as HTMLButtonElement).addEventListener("click", () => {
+      (body.querySelector("[data-reset]") as HTMLButtonElement).addEventListener("click", () => {
         if (!defaultTemplates) return;
         templateField(kind, "subject").value = defaultTemplates[kind].subject;
         templateField(kind, "text").value = defaultTemplates[kind].text;
+      });
+      const previewButton = body.querySelector("[data-preview]") as HTMLButtonElement;
+      const previewBox = body.querySelector(".email-preview") as HTMLDivElement;
+      previewButton.addEventListener("click", async () => {
+        previewButton.disabled = true;
+        try {
+          const preview = await request<EmailPreview>("POST", "/api/coach/settings/preview", {
+            team_name: (settingsForm.elements.namedItem("team_name") as HTMLInputElement).value,
+            kind,
+            template: {
+              subject: templateField(kind, "subject").value,
+              text: templateField(kind, "text").value,
+            },
+          });
+          (previewBox.querySelector(".based-on") as HTMLElement).textContent =
+            `Filled in from the game on ${preview.based_on.game} and ${preview.based_on.player}'s family. This is how the email reads as typed; save to use it.`;
+          (previewBox.querySelector(".subject") as HTMLElement).textContent =
+            `Subject: ${preview.subject}`;
+          (previewBox.querySelector("pre") as HTMLElement).textContent = preview.text;
+          previewBox.hidden = false;
+        } catch (error) {
+          report(error, "Could not preview that email.");
+        } finally {
+          previewButton.disabled = false;
+        }
       });
       panel.append(summary, body);
       return panel;
@@ -579,7 +618,7 @@ function renderRosterPreview(preview: RosterImportPreview): void {
   );
   const notes: string[] = [];
   if (preview.no_email.length)
-    notes.push(`No email in the PDF for ${preview.no_email.join(", ")} — add them by hand below.`);
+    notes.push(`No email in the PDF for ${preview.no_email.join(", ")} – add them by hand below.`);
   if (preview.truncated.length)
     notes.push(`Only the first four addresses were kept for ${preview.truncated.join(", ")}.`);
   rosterPreviewNotes.hidden = notes.length === 0;

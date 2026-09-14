@@ -20,7 +20,7 @@ export const DEFAULT_TEMPLATES: EmailTemplates = {
       "Schedule: {{site_url}}\n",
   },
   snack_reminder: {
-    subject: "{{team}}: snacks this week — {{date}}",
+    subject: "{{team}}: snacks this week – {{date}}",
     text:
       "Hi,\n\n" +
       "Quick reminder: {{player}}'s family is bringing snacks for the {{team}} game on {{game}}.\n\n" +

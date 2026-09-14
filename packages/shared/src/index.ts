@@ -1,5 +1,5 @@
 /*
- * @soccer/shared — the one module every app imports its types, schemas, configuration, data
+ * @soccer/shared – the one module every app imports its types, schemas, configuration, data
  * access and email from.
  *
  * Why it exists: without a single shared module, each app redeclares the same shapes locally and

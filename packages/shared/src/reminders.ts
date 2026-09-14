@@ -2,10 +2,10 @@
  * The daily reminder run as a function of (repo, sendEmail, clock, config). Called by the timer
  * trigger in index.ts and directly by tests. The timer fires every day; this decides what the day
  * calls for:
- *   Monday   — the family on this week's snack claim gets a reminder, at the addresses on the team
+ *   Monday   – the family on this week's snack claim gets a reminder, at the addresses on the team
  *              list for that player as of today; the coach gets a nudge if a game this week has
  *              nobody (only when COACH_EMAIL is set).
- *   Thursday — every parent address on the team list gets a reminder about Saturday's game.
+ *   Thursday – every parent address on the team list gets a reminder about Saturday's game.
  * Rules it exists to enforce: each email goes out at most once per game (`reminded_at`,
  * `team_reminded_at`), and one failed send never stops the rest of the run.
  */

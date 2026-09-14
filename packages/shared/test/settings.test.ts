@@ -7,23 +7,28 @@ describe("resolveSettings", () => {
   it("falls back to TEAM_NAME, no allergy note, the default templates and no badge", () => {
     expect(resolveSettings(undefined, "Our Team")).toEqual({
       team_name: "Our Team",
+      coach_email: "",
       allergies: "",
       templates: DEFAULT_TEMPLATES,
       logo_updated_at: null,
     });
   });
 
-  it("keeps stored values and fills templates a stored row does not have", () => {
+  it("keeps stored values and fills what a stored row does not have, template field by field", () => {
     const stored = {
       team_name: "Manchester City",
       allergies: "No peanuts.",
       logo_updated_at: "2026-09-14T10:00:00.000Z",
+      // Saved before To/BCC and coach_email existed.
       templates: { team_reminder: { subject: "Saturday!", text: "Game {{game}}." } },
     };
     const settings = resolveSettings(stored, "Our Team");
     expect(settings.team_name).toBe("Manchester City");
+    expect(settings.coach_email).toBe("");
     expect(settings.allergies).toBe("No peanuts.");
     expect(settings.templates.team_reminder.subject).toBe("Saturday!");
+    expect(settings.templates.team_reminder.to).toBe("{{coach}}");
+    expect(settings.templates.team_reminder.bcc).toBe("{{team_parents}}");
     expect(settings.templates.snack_reminder).toEqual(DEFAULT_TEMPLATES.snack_reminder);
     expect(logoUrlFor(settings)).toBe("/api/logo?v=2026-09-14T10%3A00%3A00.000Z");
   });

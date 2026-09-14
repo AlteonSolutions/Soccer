@@ -116,9 +116,11 @@ was tried first and made those routes 404 for everyone, admin included; it is de
 ## Site settings
 
 The coach edits, on the admin page: the **team name** (the heading on the sign-up page and the
-`{{team}}` in every email), a comma-separated **food allergies** list, the
+`{{team}}` in every email), the **coach email** (where `{{coach}}` goes; empty falls back to
+`COACH_EMAIL`), a comma-separated **food allergies** list, the
 **team badge** (any image up to 2 MB; the header and tab icon on both pages), and the four
-**email templates**. `TEAM_NAME` in the environment is only the fallback for a site with no
+**email templates** (To, BCC, subject, body). `TEAM_NAME` in the environment is only the
+fallback for a site with no
 settings row yet. Above the games the sign-up page shows a thank-you line and one sentence with
 the player count (always the length of the team list) and the allergies: "a peanut food
 allergy", "peanut and tree nut food allergies", or "no food allergies".
@@ -126,7 +128,7 @@ allergy", "peanut and tree nut food allergies", or "no food allergies".
 ## Data
 
 Four Table Storage tables and one blob. `settings`: partition `settings`, row key `site`, one
-row: team_name, allergies, logo_updated_at, templates_json. The badge is the blob `assets/logo`
+row: team_name, coach_email, allergies, logo_updated_at, templates_json. The badge is the blob `assets/logo`
 (an image does not fit a 64 KB table property); `logo_updated_at` versions its public URL so a
 new upload is never served from cache. `roster`: partition `member`, row key = player name lower-cased (with
 the four characters Table Storage forbids in keys mapped to `_`), columns player, emails_json,

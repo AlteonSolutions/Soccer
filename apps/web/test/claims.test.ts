@@ -18,6 +18,7 @@ function ctx(overrides: Partial<ClaimContext> = {}): ClaimContext {
     now: new Date("2026-09-10T15:00:00Z"),
     teamName: "Manchester City",
     siteUrl: "http://localhost:4280",
+    coachEmail: undefined,
     allergies: "",
     templates: DEFAULT_TEMPLATES,
     sendEmail,
@@ -41,7 +42,8 @@ describe("createClaim", () => {
     expect(result.confirmation_sent).toBe(true);
     expect(JSON.stringify(result)).not.toContain("@");
     expect(JSON.stringify(result)).not.toContain("team_reminded_at");
-    expect(readCapturedEmails().map((e) => e.to)).toEqual(["sam@example.com", "dad@example.com"]);
+    expect(readCapturedEmails().map((e) => e.to)).toEqual([["sam@example.com", "dad@example.com"]]);
+    expect(readCapturedEmails()[0]?.bcc).toEqual([]);
     expect((await repo.getClaim(game().id))?.player).toBe("Leo Rivera");
   });
 

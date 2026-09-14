@@ -775,3 +775,14 @@ td .sub {
     transform: translate(-50%, 0);
   }
 }
+.recipient-lines {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.email-preview .recipients-line {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: pre-wrap;
+}

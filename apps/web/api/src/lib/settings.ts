@@ -13,6 +13,7 @@ import {
   formatDate,
   isPastGame,
   loadSettings,
+  RECIPIENT_LEGEND,
   reminderEmail,
   selectUnclaimed,
   sortByDate,
@@ -21,8 +22,8 @@ import {
   unclaimedNudgeEmail,
   type Claim,
   type DataRepo,
-  type EmailCopy,
   type EmailKind,
+  type EmailMessage,
   type EmailPreviewInput,
   type EmailTemplates,
   type Game,
@@ -41,6 +42,7 @@ export interface EmailKindInfo {
   kind: EmailKind;
   title: string;
   placeholders: Record<string, string>;
+  recipients: Record<string, string>;
 }
 
 export interface SettingsResponse {
@@ -55,6 +57,7 @@ const EMAILS: EmailKindInfo[] = EMAIL_KINDS.map((kind) => ({
   kind,
   title: EMAIL_TITLES[kind],
   placeholders: TEMPLATE_PLACEHOLDERS[kind],
+  recipients: RECIPIENT_LEGEND[kind],
 }));
 
 function respond(settings: Settings): SettingsResponse {
@@ -130,7 +133,7 @@ const SAMPLE_GAME: Game = {
   team_reminded_at: null,
 };
 
-export interface EmailPreview extends EmailCopy {
+export interface EmailPreview extends EmailMessage {
   /** What the placeholders were filled from, so the page can say "using the game on …". */
   based_on: { game: string; player: string };
 }
@@ -145,6 +148,7 @@ export async function previewEmail(
   input: EmailPreviewInput,
   siteUrl: string,
   teamName: string,
+  fallbackCoachEmail: string | undefined,
   today: string,
 ): Promise<EmailPreview> {
   const [games, claims, roster, settings] = await Promise.all([
@@ -165,25 +169,29 @@ export async function previewEmail(
   const site = {
     teamName: input.team_name,
     siteUrl,
+    coachEmail: settings.coach_email || fallbackCoachEmail,
     allergies: settings.allergies,
     templates: { ...settings.templates, [input.kind]: input.template },
   };
-  let copy: EmailCopy;
+  let message: EmailMessage;
   switch (input.kind) {
     case "claim_confirmation":
-      copy = confirmationEmail(game, claim, site);
+      message = confirmationEmail(game, claim, site, roster);
       break;
     case "snack_reminder":
-      copy = reminderEmail(game, claim, site);
+      message = reminderEmail(game, claim, site, roster);
       break;
     case "team_reminder":
-      copy = teamReminderEmail(game, existing, site);
+      message = teamReminderEmail(game, existing, site, roster);
       break;
     case "coach_nudge": {
       const unclaimed = selectUnclaimed(games, claims, today);
-      copy = unclaimedNudgeEmail(unclaimed.length > 0 ? unclaimed : [game], site);
+      message = unclaimedNudgeEmail(unclaimed.length > 0 ? unclaimed : [game], site, roster);
       break;
     }
   }
-  return { ...copy, based_on: { game: `${formatDate(game.date)} vs ${game.opponent}`, player } };
+  return {
+    ...message,
+    based_on: { game: `${formatDate(game.date)} vs ${game.opponent}`, player },
+  };
 }

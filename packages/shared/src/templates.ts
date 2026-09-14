@@ -8,10 +8,18 @@
  * Unknown placeholders are left in place on purpose, so a typo shows up in the email rather than
  * disappearing silently.
  */
-import type { EmailKind, EmailTemplate, EmailTemplates } from "./schemas.js";
+import {
+  recipientTokens,
+  type EmailKind,
+  type EmailTemplate,
+  type EmailTemplates,
+  type RecipientPlaceholder,
+} from "./schemas.js";
 
 export const DEFAULT_TEMPLATES: EmailTemplates = {
   claim_confirmation: {
+    to: "{{parents}}",
+    bcc: "",
     subject: "{{team}}: you're on snacks for {{date}}",
     text:
       "Hi,\n\n" +
@@ -20,6 +28,8 @@ export const DEFAULT_TEMPLATES: EmailTemplates = {
       "Schedule: {{site_url}}\n",
   },
   snack_reminder: {
+    to: "{{parents}}",
+    bcc: "",
     subject: "{{team}}: snacks this week – {{date}}",
     text:
       "Hi,\n\n" +
@@ -27,7 +37,10 @@ export const DEFAULT_TEMPLATES: EmailTemplates = {
       "{{allergies}}\n\n" +
       "Thank you!\n\nSchedule: {{site_url}}\n",
   },
+  // The whole team goes in BCC so no family sees another family's address.
   team_reminder: {
+    to: "{{coach}}",
+    bcc: "{{team_parents}}",
     subject: "{{team}}: game this Saturday vs {{opponent}}",
     text:
       "Hi {{team}} families,\n\n" +
@@ -36,6 +49,8 @@ export const DEFAULT_TEMPLATES: EmailTemplates = {
       "See you there!\n\nSchedule: {{site_url}}\n",
   },
   coach_nudge: {
+    to: "{{coach}}",
+    bcc: "",
     subject: "{{team}}: {{count}} upcoming game(s) with no snack sign-up",
     text: "Nobody has signed up for snacks yet for:\n\n{{games}}\n\nSchedule: {{site_url}}\n",
   },
@@ -79,6 +94,30 @@ export const TEMPLATE_PLACEHOLDERS: Record<EmailKind, Record<string, string>> = 
   },
 };
 
+/** What the To and BCC placeholders stand for, per email, for the admin page's legend. */
+export const RECIPIENT_LEGEND: Record<EmailKind, Record<RecipientPlaceholder, string>> = {
+  claim_confirmation: {
+    parents: "the parents of the player who signed up",
+    team_parents: "every parent on the team list",
+    coach: "the coach's email from Site Settings",
+  },
+  snack_reminder: {
+    parents: "the parents of the player on snacks",
+    team_parents: "every parent on the team list",
+    coach: "the coach's email from Site Settings",
+  },
+  team_reminder: {
+    parents: "the parents of the player on snacks (nobody when the slot is open)",
+    team_parents: "every parent on the team list",
+    coach: "the coach's email from Site Settings",
+  },
+  coach_nudge: {
+    parents: "nobody – no game is picked out here",
+    team_parents: "every parent on the team list",
+    coach: "the coach's email from Site Settings",
+  },
+};
+
 export const EMAIL_TITLES: Record<EmailKind, string> = {
   claim_confirmation: "Sign-Up Confirmation",
   snack_reminder: "Monday Snack Reminder",
@@ -105,4 +144,32 @@ export function renderTemplate(
       Object.hasOwn(vars, name) ? (vars[name] as string) : whole,
     );
   return { subject: fill(template.subject), text: fill(template.text).replace(/\n{3,}/g, "\n\n") };
+}
+
+/** The address lists a To or BCC placeholder expands to, for one email. */
+export type RecipientVars = Record<RecipientPlaceholder, readonly string[]>;
+
+export interface Recipients {
+  to: string[];
+  bcc: string[];
+}
+
+/**
+ * Expand a To or BCC line: each `{{placeholder}}` becomes its addresses, literals stay. Addresses
+ * are de-duplicated, and anything already in To is dropped from BCC so nobody gets two copies.
+ */
+export function resolveRecipients(template: EmailTemplate, vars: RecipientVars): Recipients {
+  const expand = (line: string): string[] => {
+    const out: string[] = [];
+    for (const token of recipientTokens(line)) {
+      const m = /^\{\{\s*([a-z_]+)\s*\}\}$/.exec(token);
+      if (m) out.push(...(vars[m[1] as RecipientPlaceholder] ?? []));
+      else out.push(token);
+    }
+    return [...new Set(out.map((a) => a.trim().toLowerCase()).filter(Boolean))];
+  };
+  const to = expand(template.to);
+  const seen = new Set(to);
+  const bcc = expand(template.bcc).filter((a) => !seen.has(a));
+  return { to, bcc };
 }

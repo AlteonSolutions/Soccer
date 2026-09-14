@@ -144,13 +144,23 @@
         <form id="settings-form" class="settings-form">
           <label>Team Name <input name="team_name" required maxlength="60" /></label>
           <label>
+            Coach Email
+            <input
+              name="coach_email"
+              type="email"
+              maxlength="200"
+              placeholder="coach@example.com"
+            />
+          </label>
+          <label>
             Food Allergies (comma-separated)
             <input name="allergies" maxlength="300" placeholder="e.g. peanut, tree nut" />
           </label>
           <p class="hint">
-            The team name is the heading on the sign-up page and the emails. The allergies become a
-            sentence above the games ("peanut and tree nut food allergies"); leave the field empty
-            for "no food allergies".
+            The team name is the heading on the sign-up page and the emails. The coach email is
+            where {{coach}} goes in the email templates. The allergies become a sentence above the
+            games ("peanut and tree nut food allergies"); leave the field empty for "no food
+            allergies".
           </p>
           <div class="actions"><button type="submit" class="primary">Save Settings</button></div>
         </form>
@@ -174,7 +184,9 @@
           Four emails go out: a confirmation right after a sign-up, the Monday reminder to the
           family on snacks, the Thursday reminder to every family, and a Monday nudge to you when a
           game has no sign-up. Words in double braces, like {{team}}, are filled in when the email
-          is sent.
+          is sent. The To and BCC lines take {{parents}}, {{team_parents}}, {{coach}} and plain
+          addresses, separated by commas; put the team in BCC so families never see each other's
+          addresses.
         </p>
         <form id="templates-form">
           <div id="templates"></div>

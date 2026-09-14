@@ -15,7 +15,9 @@ export { AppError, type AppErrorCode } from "./errors.js";
 export { withData, type DataRepo } from "./data.js";
 export { createMemoryRepo } from "./data-memory.js";
 export {
+  chunkRecipients,
   clearCapturedEmails,
+  MAX_RECIPIENTS_PER_MESSAGE,
   readCapturedEmails,
   sendEmail,
   type EmailMessage,
@@ -29,8 +31,12 @@ export { runReminders, type RunContext, type RunSummary } from "./reminders.js";
 export {
   DEFAULT_TEMPLATES,
   EMAIL_TITLES,
+  RECIPIENT_LEGEND,
   TEMPLATE_PLACEHOLDERS,
   renderTemplate,
+  resolveRecipients,
+  type RecipientVars,
+  type Recipients,
   type RenderedEmail,
 } from "./templates.js";
 export { defaultSettings, loadSettings, logoUrlFor, resolveSettings } from "./settings.js";

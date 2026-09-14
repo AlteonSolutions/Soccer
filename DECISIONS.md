@@ -11,6 +11,22 @@ old one. Entry format:
 **Consequence.** What this costs or constrains. Supersedes: <date, or "none">.
 ```
 
+### 2026-09-14 — Who each email goes to is a template line, with the team in BCC by default
+**Context.** Recipients were fixed in code: one message per parent address, and the Thursday
+reminder sent one email per address so nobody saw another family's email. The coach asked for
+editable To and BCC lines with placeholders for the parents, the whole team and the coach.
+**Decision.** Each template carries `to` and `bcc` lines of `{{parents}}`, `{{team_parents}}`,
+`{{coach}}` and literal addresses. One message per email, chunked at 50 recipients (the Azure
+Communication Services limit). The defaults reproduce the old behaviour, and the Thursday
+default is To the coach, BCC the team, which keeps the privacy the per-address send gave. The
+coach email is a setting, falling back to `COACH_EMAIL`.
+**Rejected.** Keeping the per-address send behind the scenes: the coach could not then add an
+address, and BCC is what every parent expects a team email to look like.
+**Consequence.** The coach can put the team in To and expose every address; the admin page says
+not to. A failed send now fails one message for everyone rather than one address; the run still
+marks the game reminded so a bounce never re-sends to the team. Supersedes: the per-address
+sending described in the reminder-emails spec until today.
+
 ### 2026-09-14 — Dates read "9/19" everywhere, from one shared formatter the browser may import
 **Context.** The page said "Sat, Sep 19", the emails said "2026-09-19 at 10:00", and the coach
 asked for m/d everywhere with no weekday or year. Two formatters, one per runtime, is exactly the

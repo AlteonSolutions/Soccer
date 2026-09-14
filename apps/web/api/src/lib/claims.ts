@@ -9,6 +9,7 @@ import {
   AppError,
   confirmationEmail,
   isPastGame,
+  recipientCount,
   type Claim,
   type ClaimInput,
   type DataRepo,
@@ -22,6 +23,8 @@ export interface ClaimContext {
   now: Date;
   teamName: string;
   siteUrl: string;
+  /** Where {{coach}} goes: the settings' coach email, else COACH_EMAIL, else nobody. */
+  coachEmail: string | undefined;
   /** The coach's allergy list, for the emails that mention it. */
   allergies: string;
   /** The coach's email copy, from the site settings. */
@@ -41,9 +44,10 @@ export async function createClaim(
   input: ClaimInput,
   ctx: ClaimContext,
 ): Promise<ClaimResult> {
-  const [game, member] = await Promise.all([
+  const [game, member, roster] = await Promise.all([
     repo.getGame(input.game_id),
     repo.getRosterMember(input.player),
+    repo.listRoster(),
   ]);
   if (!member) {
     throw new AppError(
@@ -75,23 +79,24 @@ export async function createClaim(
   };
   await repo.createClaim(claim);
 
+  // The template's To/BCC lines say who gets the confirmation (by default the parents on the team
+  // list for this player). Nobody to send to is logged like a failed send; the claim stands.
   let confirmationSent = false;
-  const copy = confirmationEmail(game, claim, ctx);
-  for (const to of member.emails) {
-    try {
-      await ctx.sendEmail({ to, ...copy });
-      confirmationSent = true;
-    } catch (error) {
-      // Secondary side effect: log and continue. The claim stands.
-      ctx.log(
-        JSON.stringify({
-          event: "claim.confirmation_failed",
-          game_id: game.id,
-          to,
-          detail: String(error),
-        }),
-      );
-    }
+  const message = confirmationEmail(game, claim, ctx, roster);
+  try {
+    if (recipientCount(message) === 0) throw new Error("no recipients");
+    await ctx.sendEmail(message);
+    confirmationSent = true;
+  } catch (error) {
+    // Secondary side effect: log and continue. The claim stands.
+    ctx.log(
+      JSON.stringify({
+        event: "claim.confirmation_failed",
+        game_id: game.id,
+        recipients: recipientCount(message),
+        detail: String(error),
+      }),
+    );
   }
 
   return {

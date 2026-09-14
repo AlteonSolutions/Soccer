@@ -96,13 +96,48 @@ export type ScheduleResponse = z.infer<typeof scheduleResponseSchema>;
 
 // ---- Site settings: what the coach edits on the admin page and every page and email reads.
 
-/** One email's copy. Placeholders are `{{name}}`; see TEMPLATE_PLACEHOLDERS in templates.ts. */
+/** The placeholders a To or BCC line may use; each stands for a list of addresses at send time. */
+export const RECIPIENT_PLACEHOLDERS = ["parents", "team_parents", "coach"] as const;
+export type RecipientPlaceholder = (typeof RECIPIENT_PLACEHOLDERS)[number];
+
+const RECIPIENT_TOKEN = /^\{\{\s*(parents|team_parents|coach)\s*\}\}$/;
+
+/** The comma-separated tokens of a To or BCC line: placeholders and literal addresses, no blanks. */
+export function recipientTokens(line: string): string[] {
+  return line
+    .split(",")
+    .map((t) => t.trim())
+    .filter(Boolean);
+}
+
+/** A To or BCC line: comma-separated `{{placeholders}}` and email addresses. Empty is allowed. */
+export const recipientLineSchema = z
+  .string()
+  .trim()
+  // 500 characters: a handful of placeholders and a few addresses, not a mailing list.
+  .max(500)
+  .refine(
+    (line) =>
+      recipientTokens(line).every((t) => RECIPIENT_TOKEN.test(t) || z.email().safeParse(t).success),
+    {
+      message:
+        "Use {{parents}}, {{team_parents}}, {{coach}} or email addresses, separated by commas",
+    },
+  );
+
+/** One email's addressing and copy. Placeholders are `{{name}}`; see templates.ts for the legend. */
 export const emailTemplateSchema = z
   .object({
+    to: recipientLineSchema,
+    bcc: recipientLineSchema,
     subject: z.string().trim().min(1).max(200),
     text: z.string().min(1).max(4000),
   })
-  .strict();
+  .strict()
+  .refine((t) => recipientTokens(t.to).length + recipientTokens(t.bcc).length > 0, {
+    message: "The email needs at least one recipient in To or BCC",
+    path: ["to"],
+  });
 export type EmailTemplate = z.infer<typeof emailTemplateSchema>;
 
 export const EMAIL_KINDS = [
@@ -127,6 +162,8 @@ export type EmailTemplates = z.infer<typeof emailTemplatesSchema>;
 export const settingsInputSchema = z
   .object({
     team_name: z.string().trim().min(1).max(60),
+    // Where {{coach}} goes. Empty falls back to COACH_EMAIL in the environment, if set.
+    coach_email: z.email().or(z.literal("")).default(""),
     // 300 characters: a comma-separated list ("peanut, tree nut"), not a policy document.
     // Defaulted for the same reason as logo_updated_at: an empty column may not come back.
     allergies: z.string().trim().max(300).default(""),

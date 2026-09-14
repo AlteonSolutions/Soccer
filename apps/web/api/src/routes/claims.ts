@@ -26,6 +26,7 @@ app.http("claims", {
           today: localDateIso(now, config.TIMEZONE),
           teamName: settings.team_name,
           siteUrl: config.SITE_URL,
+          coachEmail: settings.coach_email || config.COACH_EMAIL,
           allergies: settings.allergies,
           templates: settings.templates,
           sendEmail,

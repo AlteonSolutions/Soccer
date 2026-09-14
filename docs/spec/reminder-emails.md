@@ -8,12 +8,23 @@ after the sender domain is verified._
 Games are on Saturday. The timer runs every day at 14:00 UTC and decides what the day calls for in
 the team's time zone (`TIMEZONE`):
 
-| Day | Email | To | Once per |
+| Day | Email | Default To / BCC | Once per |
 |---|---|---|---|
-| Any | **Confirmation** — right after a sign-up. Sent by the web API. | every parent email on the team list for the chosen player | sign-up |
-| Monday | **Snack reminder** — "X's family is on snacks this week", with the allergy reminder when set. | every parent email on the team list for the claimed player, read that morning | claim (`reminded_at`) |
-| Monday | **Coach nudge** — a game this week has nobody. Only when `COACH_EMAIL` is set. | the coach | run |
-| Thursday | **Team reminder** — "game this Saturday vs …", naming the player whose family has snacks. | every distinct parent email across the team list; one email each | game (`team_reminded_at`) |
+| Any | **Confirmation** — right after a sign-up. Sent by the web API. | To `{{parents}}`: every parent email on the team list for the chosen player | sign-up |
+| Monday | **Snack reminder** — "X's family is on snacks this week", with the allergy reminder when set. | To `{{parents}}`, read that morning | claim (`reminded_at`) |
+| Monday | **Coach nudge** — a game this week has nobody. Sent only when it resolves to somebody. | To `{{coach}}` | run |
+| Thursday | **Team reminder** — "game this Saturday vs …", naming the player whose family has snacks. | To `{{coach}}`, BCC `{{team_parents}}`: every distinct parent email across the team list | game (`team_reminded_at`) |
+
+The To and BCC lines are part of each template and the coach edits them on the admin page. A line
+is a comma-separated mix of `{{parents}}` (the parents of the player the email is about),
+`{{team_parents}}` (every address on the team list, once), `{{coach}}` (the coach email from
+Site Settings, else `COACH_EMAIL`, else nobody) and plain addresses. Addresses are de-duplicated
+and anyone in To is dropped from BCC. The team goes in BCC by default so no family sees another's
+address; the coach can move it to To knowingly. A template must name somebody in To or BCC; an
+email whose lines resolve to nobody at send time is logged and skipped (a Monday reminder is then
+retried the following Monday). Azure Communication Services takes at most 50 recipients per
+message, so a longer list goes out as several messages: the first with To and the first BCCs,
+the rest BCC only.
 
 Every email is plain text, from `EMAIL_FROM` on the verified domain, with the site URL at the end.
 
@@ -41,8 +52,8 @@ mom@example.com, dad@example.com` (up to four addresses); re-adding a player rep
 addresses; Remove takes a player off. Stored in the
 `roster` table, one row per player, never shown outside the admin page. It is also what the public
 sign-up picker offers (names only), so an empty list means nobody can sign up and Thursday's
-email goes to nobody; the admin page says so. Two players with the same parent email produce one
-Thursday email, not two.
+email goes to nobody; the admin page says so. Two players with the same parent email get one
+Thursday copy, not two.
 
 ## Rules
 

@@ -16,7 +16,8 @@ import type {
   RosterMember,
 } from "./schemas.js";
 import { allergyList, formatDate, formatKickoff, joinWithAnd } from "./format.js";
-import { renderTemplate } from "./templates.js";
+import { renderTemplate, resolveRecipients, type RecipientVars } from "./templates.js";
+import type { EmailMessage } from "./email.js";
 
 /** Calendar date (YYYY-MM-DD) of `now` in the team's time zone, not in UTC. */
 export function localDateIso(now: Date, timeZone: string): string {
@@ -100,7 +101,7 @@ export function emailsForPlayer(roster: readonly RosterMember[], player: string)
   return roster.find((m) => m.player.trim().toLowerCase() === key)?.emails ?? [];
 }
 
-/** Thursday's recipients: one email per address, however many players share a parent. */
+/** Every address on the team list once, however many players share a parent. */
 export function rosterEmails(roster: readonly RosterMember[]): string[] {
   return [...new Set(roster.flatMap((m) => m.emails))].sort();
 }
@@ -161,9 +162,24 @@ export interface EmailCopy {
 export interface EmailSite {
   teamName: string;
   siteUrl: string;
+  /** Where {{coach}} goes; undefined when neither the settings nor the environment name one. */
+  coachEmail: string | undefined;
   /** The coach's comma-separated allergy list; "" when there are none. */
   allergies: string;
   templates: EmailTemplates;
+}
+
+/** What each To/BCC placeholder expands to for an email about `player` (or nobody's). */
+function recipientVars(
+  site: EmailSite,
+  roster: readonly RosterMember[],
+  player: string | undefined,
+): RecipientVars {
+  return {
+    parents: player ? emailsForPlayer(roster, player) : [],
+    team_parents: rosterEmails(roster),
+    coach: site.coachEmail ? [site.coachEmail] : [],
+  };
 }
 
 /** The Monday email's allergy line, or "" when the team has none (the template collapses it). */
@@ -190,19 +206,34 @@ function gameVars(game: Game, site: EmailSite): Record<string, string> {
   };
 }
 
-export function confirmationEmail(game: Game, claim: Claim, site: EmailSite): EmailCopy {
-  return renderTemplate(site.templates.claim_confirmation, {
-    ...gameVars(game, site),
-    player: claim.player,
-  });
+export function confirmationEmail(
+  game: Game,
+  claim: Claim,
+  site: EmailSite,
+  roster: readonly RosterMember[],
+): EmailMessage {
+  const template = site.templates.claim_confirmation;
+  return {
+    ...resolveRecipients(template, recipientVars(site, roster, claim.player)),
+    ...renderTemplate(template, { ...gameVars(game, site), player: claim.player }),
+  };
 }
 
-export function reminderEmail(game: Game, claim: Claim, site: EmailSite): EmailCopy {
-  return renderTemplate(site.templates.snack_reminder, {
-    ...gameVars(game, site),
-    player: claim.player,
-    allergies: describeAllergies(site.allergies),
-  });
+export function reminderEmail(
+  game: Game,
+  claim: Claim,
+  site: EmailSite,
+  roster: readonly RosterMember[],
+): EmailMessage {
+  const template = site.templates.snack_reminder;
+  return {
+    ...resolveRecipients(template, recipientVars(site, roster, claim.player)),
+    ...renderTemplate(template, {
+      ...gameVars(game, site),
+      player: claim.player,
+      allergies: describeAllergies(site.allergies),
+    }),
+  };
 }
 
 /** Thursday's note to every family. Names the player whose family has snacks; never an email. */
@@ -210,19 +241,37 @@ export function teamReminderEmail(
   game: Game,
   claim: Claim | undefined,
   site: EmailSite,
-): EmailCopy {
+  roster: readonly RosterMember[],
+): EmailMessage {
   const snacks = claim
     ? `Snacks: ${claim.player}.`
     : `Snacks: nobody has signed up yet – grab the slot at ${site.siteUrl}`;
-  return renderTemplate(site.templates.team_reminder, { ...gameVars(game, site), snacks });
+  const template = site.templates.team_reminder;
+  return {
+    ...resolveRecipients(template, recipientVars(site, roster, claim?.player)),
+    ...renderTemplate(template, { ...gameVars(game, site), snacks }),
+  };
 }
 
-export function unclaimedNudgeEmail(games: readonly Game[], site: EmailSite): EmailCopy {
+export function unclaimedNudgeEmail(
+  games: readonly Game[],
+  site: EmailSite,
+  roster: readonly RosterMember[],
+): EmailMessage {
   const list = games.map((g) => `  - ${describeGame(g)}`).join("\n");
-  return renderTemplate(site.templates.coach_nudge, {
-    team: site.teamName,
-    count: String(games.length),
-    games: list,
-    site_url: site.siteUrl,
-  });
+  const template = site.templates.coach_nudge;
+  return {
+    ...resolveRecipients(template, recipientVars(site, roster, undefined)),
+    ...renderTemplate(template, {
+      team: site.teamName,
+      count: String(games.length),
+      games: list,
+      site_url: site.siteUrl,
+    }),
+  };
+}
+
+/** How many addresses a message reaches, To and BCC together. */
+export function recipientCount(message: Pick<EmailMessage, "to" | "bcc">): number {
+  return message.to.length + message.bcc.length;
 }

@@ -5,6 +5,7 @@
 import type {
   AdminGame,
   EmailKind,
+  EmailTemplate,
   EmailTemplates,
   ImportPreview,
   RosterImportPreview,
@@ -45,6 +46,7 @@ interface EmailKindInfo {
   kind: EmailKind;
   title: string;
   placeholders: Record<string, string>;
+  recipients: Record<string, string>;
 }
 
 interface SettingsResponse {
@@ -54,6 +56,8 @@ interface SettingsResponse {
 }
 
 interface EmailPreview {
+  to: string[];
+  bcc: string[];
   subject: string;
   text: string;
   based_on: { game: string; player: string };
@@ -321,13 +325,25 @@ function renderRoster(members: RosterMember[]): void {
 let defaultTemplates: EmailTemplates | undefined;
 let emailKinds: EmailKindInfo[] = [];
 
-function templateField(kind: EmailKind, field: "subject" | "text"): HTMLInputElement {
+type TemplateField = "to" | "bcc" | "subject" | "text";
+const TEMPLATE_FIELDS: TemplateField[] = ["to", "bcc", "subject", "text"];
+
+function readTemplate(kind: EmailKind): EmailTemplate {
+  return {
+    to: templateField(kind, "to").value,
+    bcc: templateField(kind, "bcc").value,
+    subject: templateField(kind, "subject").value,
+    text: templateField(kind, "text").value,
+  };
+}
+
+function templateField(kind: EmailKind, field: TemplateField): HTMLInputElement {
   return templatesBox.querySelector(`[name="${kind}.${field}"]`) as HTMLInputElement;
 }
 
 function renderTemplateEditors(): void {
   templatesBox.replaceChildren(
-    ...emailKinds.map(({ kind, title, placeholders }) => {
+    ...emailKinds.map(({ kind, title, placeholders, recipients }) => {
       const panel = document.createElement("details");
       panel.className = "tools";
       const summary = document.createElement("summary");
@@ -335,8 +351,13 @@ function renderTemplateEditors(): void {
       const body = document.createElement("div");
       body.className = "tool template";
       body.innerHTML = `
-        <label>Subject <input required maxlength="200" /></label>
-        <label>Body <textarea required maxlength="4000" rows="8"></textarea></label>
+        <div class="recipient-lines">
+          <label>To <input data-field="to" maxlength="500" /></label>
+          <label>BCC <input data-field="bcc" maxlength="500" /></label>
+        </div>
+        <p class="placeholders recipients"></p>
+        <label>Subject <input data-field="subject" required maxlength="200" /></label>
+        <label>Body <textarea data-field="text" required maxlength="4000" rows="8"></textarea></label>
         <p class="placeholders"></p>
         <div class="actions">
           <button type="button" class="primary" data-preview>Preview</button>
@@ -344,22 +365,29 @@ function renderTemplateEditors(): void {
         </div>
         <div class="email-preview" hidden>
           <p class="based-on"></p>
+          <p class="recipients-line"></p>
           <p class="subject"></p>
           <pre></pre>
         </div>`;
-      (body.querySelector("input") as HTMLInputElement).name = `${kind}.subject`;
-      (body.querySelector("textarea") as HTMLTextAreaElement).name = `${kind}.text`;
-      const legend = body.querySelector(".placeholders") as HTMLParagraphElement;
-      legend.append("You can use: ");
-      Object.entries(placeholders).forEach(([name, meaning], i) => {
-        const code = document.createElement("code");
-        code.textContent = `{{${name}}}`;
-        legend.append(i === 0 ? "" : " · ", code, ` ${meaning}`);
-      });
+      for (const input of body.querySelectorAll<HTMLInputElement>("[data-field]")) {
+        input.name = `${kind}.${input.dataset["field"]}`;
+      }
+      const legendFor = (selector: string, lead: string, entries: Record<string, string>) => {
+        const legend = body.querySelector(selector) as HTMLParagraphElement;
+        legend.append(lead);
+        Object.entries(entries).forEach(([name, meaning], i) => {
+          const code = document.createElement("code");
+          code.textContent = `{{${name}}}`;
+          legend.append(i === 0 ? "" : " · ", code, ` ${meaning}`);
+        });
+      };
+      legendFor(".placeholders.recipients", "To and BCC can use: ", recipients);
+      legendFor(".placeholders:not(.recipients)", "Subject and body can use: ", placeholders);
       (body.querySelector("[data-reset]") as HTMLButtonElement).addEventListener("click", () => {
         if (!defaultTemplates) return;
-        templateField(kind, "subject").value = defaultTemplates[kind].subject;
-        templateField(kind, "text").value = defaultTemplates[kind].text;
+        for (const field of TEMPLATE_FIELDS) {
+          templateField(kind, field).value = defaultTemplates[kind][field];
+        }
       });
       const previewButton = body.querySelector("[data-preview]") as HTMLButtonElement;
       const previewBox = body.querySelector(".email-preview") as HTMLDivElement;
@@ -369,13 +397,13 @@ function renderTemplateEditors(): void {
           const preview = await request<EmailPreview>("POST", "/api/coach/settings/preview", {
             team_name: (settingsForm.elements.namedItem("team_name") as HTMLInputElement).value,
             kind,
-            template: {
-              subject: templateField(kind, "subject").value,
-              text: templateField(kind, "text").value,
-            },
+            template: readTemplate(kind),
           });
           (previewBox.querySelector(".based-on") as HTMLElement).textContent =
             `Filled in from the game on ${preview.based_on.game} and ${preview.based_on.player}'s family. This is how the email reads as typed; save to use it.`;
+          (previewBox.querySelector(".recipients-line") as HTMLElement).textContent =
+            `To: ${preview.to.join(", ") || "(nobody)"}` +
+            (preview.bcc.length ? `\nBCC: ${preview.bcc.join(", ")}` : "");
           (previewBox.querySelector(".subject") as HTMLElement).textContent =
             `Subject: ${preview.subject}`;
           (previewBox.querySelector("pre") as HTMLElement).textContent = preview.text;
@@ -408,9 +436,11 @@ function renderSettings({ settings, default_templates, emails }: SettingsRespons
   if (templatesBox.childElementCount === 0) renderTemplateEditors();
   (settingsForm.elements.namedItem("team_name") as HTMLInputElement).value = settings.team_name;
   (settingsForm.elements.namedItem("allergies") as HTMLTextAreaElement).value = settings.allergies;
+  (settingsForm.elements.namedItem("coach_email") as HTMLInputElement).value = settings.coach_email;
   for (const { kind } of emailKinds) {
-    templateField(kind, "subject").value = settings.templates[kind].subject;
-    templateField(kind, "text").value = settings.templates[kind].text;
+    for (const field of TEMPLATE_FIELDS) {
+      templateField(kind, field).value = settings.templates[kind][field];
+    }
   }
   renderBadge(settings);
 }
@@ -418,17 +448,16 @@ function renderSettings({ settings, default_templates, emails }: SettingsRespons
 /** Everything on both forms, as one settings body: each Save button sends the whole thing. */
 function collectSettings(): {
   team_name: string;
+  coach_email: string;
   allergies: string;
-  templates: Record<EmailKind, { subject: string; text: string }>;
+  templates: Record<EmailKind, EmailTemplate>;
 } {
   const templates = Object.fromEntries(
-    emailKinds.map(({ kind }) => [
-      kind,
-      { subject: templateField(kind, "subject").value, text: templateField(kind, "text").value },
-    ]),
-  ) as Record<EmailKind, { subject: string; text: string }>;
+    emailKinds.map(({ kind }) => [kind, readTemplate(kind)]),
+  ) as Record<EmailKind, EmailTemplate>;
   return {
     team_name: (settingsForm.elements.namedItem("team_name") as HTMLInputElement).value,
+    coach_email: (settingsForm.elements.namedItem("coach_email") as HTMLInputElement).value,
     allergies: (settingsForm.elements.namedItem("allergies") as HTMLInputElement).value,
     templates,
   };

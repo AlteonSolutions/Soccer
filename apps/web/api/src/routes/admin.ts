@@ -276,7 +276,7 @@ app.http("coach-settings-preview", {
       return json(
         200,
         await withData((repo) =>
-          previewEmail(repo, input, config.SITE_URL, config.TEAM_NAME, today),
+          previewEmail(repo, input, config.SITE_URL, config.TEAM_NAME, config.COACH_EMAIL, today),
         ),
       );
     } catch (error) {

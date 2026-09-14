@@ -109,8 +109,12 @@ describe("withData against Azurite", async () => {
   run("round-trips the settings row and the badge blob", async () => {
     const settings = {
       team_name: `Azurite FC ${suffix}`,
+      coach_email: "coach@example.com",
       allergies: "No peanuts.",
-      templates: { ...DEFAULT_TEMPLATES, coach_nudge: { subject: "s", text: "t" } },
+      templates: {
+        ...DEFAULT_TEMPLATES,
+        coach_nudge: { to: "{{coach}}", bcc: "", subject: "s", text: "t" },
+      },
       logo_updated_at: "2026-09-14T10:00:00.000Z",
     };
     await withData((repo) => repo.putSettings(settings));
@@ -128,7 +132,7 @@ describe("withData against Azurite", async () => {
 
     // The first save on the live site: no badge (null), no allergies (""). Table Storage stores
     // neither as a column, and the read must still succeed with the defaults.
-    const fresh = { ...settings, allergies: "", logo_updated_at: null };
+    const fresh = { ...settings, coach_email: "", allergies: "", logo_updated_at: null };
     await withData((repo) => repo.putSettings(fresh));
     expect(await withData((repo) => repo.getSettings())).toEqual(fresh);
   });

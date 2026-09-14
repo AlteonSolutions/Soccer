@@ -21,10 +21,15 @@ describe("settings", () => {
 
     const after = await updateSettings(repo, "Our Team", {
       team_name: "Snack City",
+      coach_email: "coach@example.com",
       allergies: "No peanuts.",
       templates: {
         ...DEFAULT_TEMPLATES,
-        team_reminder: { subject: "Saturday", text: "Game {{game}}. {{snacks}}" },
+        team_reminder: {
+          ...DEFAULT_TEMPLATES.team_reminder,
+          subject: "Saturday",
+          text: "Game {{game}}. {{snacks}}",
+        },
       },
     });
     expect(after.settings.team_name).toBe("Snack City");
@@ -45,6 +50,7 @@ describe("settings", () => {
     // A settings edit does not lose the badge.
     const edited = await updateSettings(repo, "Our Team", {
       team_name: "Edited",
+      coach_email: "",
       allergies: "",
       templates: DEFAULT_TEMPLATES,
     });
@@ -82,14 +88,23 @@ describe("previewEmail", () => {
       {
         team_name: "Snack City",
         kind: "snack_reminder",
-        template: { subject: "{{team}} snacks {{date}}", text: "{{player}} vs {{opponent}}" },
+        template: {
+          to: "{{parents}}",
+          bcc: "{{coach}}",
+          subject: "{{team}} snacks {{date}}",
+          text: "{{player}} vs {{opponent}}",
+        },
       },
       "https://example.org",
       "Our Team",
+      "fallback-coach@example.com",
       "2026-09-14",
     );
     expect(preview.subject).toBe("Snack City snacks 9/19");
     expect(preview.text).toBe("Leo Rivera vs Red Dragons");
+    // The claim's player is Leo Rivera; only Mia Chen is on the list, so parents resolve to nobody.
+    expect(preview.to).toEqual([]);
+    expect(preview.bcc).toEqual(["fallback-coach@example.com"]);
     expect(preview.based_on).toEqual({ game: "9/19 vs Red Dragons", player: "Leo Rivera" });
     expect((await getSettings(repo, "Our Team")).settings.templates).toEqual(DEFAULT_TEMPLATES);
   });
@@ -100,22 +115,25 @@ describe("previewEmail", () => {
       {
         team_name: "T",
         kind: "claim_confirmation",
-        template: { subject: "s", text: "{{player}}" },
+        template: { to: "{{parents}}", bcc: "", subject: "s", text: "{{player}}" },
       },
       "https://example.org",
       "Our Team",
+      undefined,
       "2026-09-14",
     );
     expect(withRoster.text).toBe("Mia Chen");
+    expect(withRoster.to).toEqual(["sam@example.com"]);
     const empty = await previewEmail(
       createMemoryRepo(),
       {
         team_name: "T",
         kind: "coach_nudge",
-        template: { subject: "{{count}}", text: "{{games}}" },
+        template: { to: "{{coach}}", bcc: "", subject: "{{count}}", text: "{{games}}" },
       },
       "https://example.org",
       "Our Team",
+      undefined,
       "2026-09-14",
     );
     expect(empty.subject).toBe("1");

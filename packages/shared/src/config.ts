@@ -29,7 +29,7 @@ const envSchema = z
     // Capture-vs-send flag, defaulting to capture: both audited projects that send mail invented
     // this flag independently after a test run emailed real people.
     EMAIL_LIVE: z.enum(["on", "off"]).default("off"),
-    // Where "nobody has signed up for Saturday" nudges go. Optional: without it, no nudge is sent.
+    // Fallback for {{coach}} in the email templates; the coach email saved in Site Settings wins.
     COACH_EMAIL: z.email().optional(),
 
     // Game dates are calendar dates in the team's zone; "today" is computed in it, not in UTC.

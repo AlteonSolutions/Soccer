@@ -17,9 +17,9 @@ function ctx(overrides: Partial<RunContext> = {}): RunContext {
     now: new Date("2026-09-14T14:00:00Z"),
     teamName: "Manchester City",
     siteUrl: "http://localhost:4280",
+    coachEmail: undefined,
     allergies: "",
     templates: DEFAULT_TEMPLATES,
-    coachEmail: undefined,
     sendEmail,
     log: () => {},
     ...overrides,
@@ -56,18 +56,18 @@ describe("runReminders", () => {
     const first = await runReminders(repo, ctx());
     expect(first.day).toBe("monday");
     expect(first.snack_reminders_sent).toBe(1);
-    expect(readCapturedEmails().map((e) => e.to)).toEqual(["sam@example.com", "dad@example.com"]);
+    expect(readCapturedEmails().map((e) => e.to)).toEqual([["sam@example.com", "dad@example.com"]]);
 
     const again = await runReminders(repo, ctx({ now: new Date("2026-09-14T20:00:00Z") }));
     expect(again.snack_reminders_sent).toBe(0);
-    expect(readCapturedEmails()).toHaveLength(2);
+    expect(readCapturedEmails()).toHaveLength(1);
   });
 
   it("Monday: uses an address corrected after sign-up", async () => {
     const repo = createMemoryRepo({ games: [game()], claims: [claim()], roster });
     await repo.addRosterMembers([member({ player: "Leo Rivera", emails: ["fixed@example.com"] })]);
     await runReminders(repo, ctx());
-    expect(readCapturedEmails().map((e) => e.to)).toEqual(["fixed@example.com"]);
+    expect(readCapturedEmails().map((e) => e.to)).toEqual([["fixed@example.com"]]);
   });
 
   it("Monday: does not mark a claim reminded when every send fails, so it is retried", async () => {
@@ -94,25 +94,47 @@ describe("runReminders", () => {
     expect((await repo.getClaim(game().id))?.reminded_at).toBeNull();
   });
 
-  it("Monday: nudges the coach about an unclaimed game only when a coach email is configured", async () => {
+  it("Monday: nudges the coach about an unclaimed game only when the nudge has somewhere to go", async () => {
     const repo = createMemoryRepo({ games: [game()], roster });
     expect((await runReminders(repo, ctx())).coach_nudged).toBe(false);
     const summary = await runReminders(repo, ctx({ coachEmail: "coach@example.com" }));
     expect(summary.coach_nudged).toBe(true);
     expect(summary.unclaimed_games).toBe(1);
-    expect(readCapturedEmails().at(-1)?.to).toBe("coach@example.com");
+    expect(readCapturedEmails().at(-1)?.to).toEqual(["coach@example.com"]);
   });
 
-  it("Thursday: emails every distinct address on the team list once about Saturday's game", async () => {
+  it("Monday: the coach's To/BCC edits are honoured, with a literal address and a copy to the coach", async () => {
+    const repo = createMemoryRepo({ games: [game()], claims: [claim()], roster });
+    const templates = {
+      ...DEFAULT_TEMPLATES,
+      snack_reminder: {
+        ...DEFAULT_TEMPLATES.snack_reminder,
+        to: "{{parents}}, helper@example.com",
+        bcc: "{{coach}}",
+      },
+    };
+    await runReminders(repo, ctx({ templates, coachEmail: "coach@example.com" }));
+    const sent = readCapturedEmails()[0];
+    expect(sent?.to).toEqual(["sam@example.com", "dad@example.com", "helper@example.com"]);
+    expect(sent?.bcc).toEqual(["coach@example.com"]);
+  });
+
+  it("Thursday: one message, To the coach and BCC every distinct address on the team list", async () => {
     const repo = createMemoryRepo({ games: [game()], claims: [claim()], roster });
     const summary = await runReminders(
       repo,
-      ctx({ today: "2026-09-17", now: new Date("2026-09-17T14:00:00Z") }),
+      ctx({
+        today: "2026-09-17",
+        now: new Date("2026-09-17T14:00:00Z"),
+        coachEmail: "coach@example.com",
+      }),
     );
     expect(summary.day).toBe("thursday");
-    expect(summary.team_reminders_sent).toBe(everyAddress.length);
+    expect(summary.team_reminders_sent).toBe(everyAddress.length + 1);
     const sent = readCapturedEmails();
-    expect(sent.map((e) => e.to).sort()).toEqual(everyAddress);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.to).toEqual(["coach@example.com"]);
+    expect([...(sent[0]?.bcc ?? [])].sort()).toEqual(everyAddress);
     expect(sent[0]?.text).toContain("Snacks: Leo Rivera.");
     expect(sent[0]?.text).not.toContain("@example.com");
     expect((await repo.getGame(game().id))?.team_reminded_at).toBe("2026-09-17T14:00:00.000Z");
@@ -122,21 +144,35 @@ describe("runReminders", () => {
       ctx({ today: "2026-09-17", now: new Date("2026-09-17T20:00:00Z") }),
     );
     expect(again.team_reminders_sent).toBe(0);
-    expect(readCapturedEmails()).toHaveLength(everyAddress.length);
+    expect(readCapturedEmails()).toHaveLength(1);
   });
 
-  it("Thursday: one bad address does not stop the others or cause a re-send", async () => {
+  it("Thursday: with no coach email the team still gets the reminder, in BCC only", async () => {
     const repo = createMemoryRepo({ games: [game()], roster });
-    const flaky: SendEmail = async (m) => {
-      if (m.to === "a@example.com") throw new Error("bounce");
-      return { mode: "captured", id: "x" };
+    await runReminders(repo, ctx({ today: "2026-09-17", now: new Date("2026-09-17T14:00:00Z") }));
+    const sent = readCapturedEmails()[0];
+    expect(sent?.to).toEqual([]);
+    expect([...(sent?.bcc ?? [])].sort()).toEqual(everyAddress);
+  });
+
+  it("Thursday: a failed send is counted, logged, and never retried to everyone", async () => {
+    const repo = createMemoryRepo({ games: [game()], roster });
+    const failing: SendEmail = async () => {
+      throw new Error("bounce");
     };
+    const logged: string[] = [];
     const summary = await runReminders(
       repo,
-      ctx({ today: "2026-09-17", now: new Date("2026-09-17T14:00:00Z"), sendEmail: flaky }),
+      ctx({
+        today: "2026-09-17",
+        now: new Date("2026-09-17T14:00:00Z"),
+        sendEmail: failing,
+        log: (l) => logged.push(l),
+      }),
     );
-    expect(summary.team_reminders_sent).toBe(everyAddress.length - 1);
-    expect(summary.team_reminders_failed).toBe(1);
+    expect(summary.team_reminders_sent).toBe(0);
+    expect(summary.team_reminders_failed).toBe(everyAddress.length);
+    expect(logged.join("\n")).toContain("team_reminder.failed");
     expect((await repo.getGame(game().id))?.team_reminded_at).not.toBeNull();
   });
 });

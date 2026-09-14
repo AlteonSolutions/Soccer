@@ -11,6 +11,7 @@ import { DEFAULT_TEMPLATES } from "./templates.js";
 export function defaultSettings(teamName: string): Settings {
   return {
     team_name: teamName,
+    coach_email: "",
     allergies: "",
     templates: DEFAULT_TEMPLATES,
     logo_updated_at: null,
@@ -22,11 +23,16 @@ export function resolveSettings(stored: unknown, teamName: string): Settings {
   const base = defaultSettings(teamName);
   if (!stored || typeof stored !== "object") return base;
   const row = stored as Record<string, unknown>;
-  const merged = {
-    ...base,
-    ...row,
-    templates: { ...DEFAULT_TEMPLATES, ...(row["templates"] as object | undefined) },
-  };
+  // Each template is merged field by field over its default: a template saved before To and
+  // BCC existed keeps its subject and body and gains the default addressing.
+  const storedTemplates = (row["templates"] ?? {}) as Record<string, object | undefined>;
+  const templates = Object.fromEntries(
+    Object.entries(DEFAULT_TEMPLATES).map(([kind, def]) => [
+      kind,
+      { ...def, ...storedTemplates[kind] },
+    ]),
+  );
+  const merged = { ...base, ...row, templates };
   const parsed = settingsSchema.safeParse(merged);
   return parsed.success ? parsed.data : base;
 }

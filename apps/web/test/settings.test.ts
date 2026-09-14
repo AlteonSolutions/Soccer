@@ -88,9 +88,9 @@ describe("previewEmail", () => {
       "Our Team",
       "2026-09-14",
     );
-    expect(preview.subject).toBe("Snack City snacks 2026-09-19");
+    expect(preview.subject).toBe("Snack City snacks 9/19");
     expect(preview.text).toBe("Leo Rivera vs Red Dragons");
-    expect(preview.based_on).toEqual({ game: "2026-09-19 vs Red Dragons", player: "Leo Rivera" });
+    expect(preview.based_on).toEqual({ game: "9/19 vs Red Dragons", player: "Leo Rivera" });
     expect((await getSettings(repo, "Our Team")).settings.templates).toEqual(DEFAULT_TEMPLATES);
   });
 

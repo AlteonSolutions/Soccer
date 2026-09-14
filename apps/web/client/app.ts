@@ -4,7 +4,8 @@
  */
 import type { PublicGame, ScheduleResponse } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
-import { dateParts, describeSnack, describeTeam, formatDate, formatKickoff } from "./lib/format.js";
+import { dateParts, formatDate, formatKickoff } from "@soccer/shared/format";
+import { describeSnack, describeTeam } from "./lib/format.js";
 
 const status = document.getElementById("status") as HTMLParagraphElement;
 const list = document.getElementById("games") as HTMLUListElement;
@@ -105,7 +106,7 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
   const parts = dateParts(game.date);
   item.innerHTML = `
     <div class="date-tile" aria-hidden="true">
-      <span class="month"></span><span class="day"></span><span class="weekday"></span>
+      <span class="month"></span><span class="day"></span>
     </div>
     <div>
       <h2></h2>
@@ -114,7 +115,6 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
     <div class="snack"></div>`;
   (item.querySelector(".month") as HTMLElement).textContent = parts.month;
   (item.querySelector(".day") as HTMLElement).textContent = parts.day;
-  (item.querySelector(".weekday") as HTMLElement).textContent = parts.weekday;
   (item.querySelector("h2") as HTMLElement).textContent = `vs ${game.opponent}`;
   (item.querySelector(".kickoff") as HTMLElement).textContent =
     `${formatDate(game.date)} · ${formatKickoff(game.kickoff)}`;

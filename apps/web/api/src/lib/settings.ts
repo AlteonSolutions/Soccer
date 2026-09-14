@@ -10,6 +10,7 @@ import {
   DEFAULT_TEMPLATES,
   EMAIL_KINDS,
   EMAIL_TITLES,
+  formatDate,
   isPastGame,
   loadSettings,
   reminderEmail,
@@ -183,5 +184,5 @@ export async function previewEmail(
       break;
     }
   }
-  return { ...copy, based_on: { game: `${game.date} vs ${game.opponent}`, player } };
+  return { ...copy, based_on: { game: `${formatDate(game.date)} vs ${game.opponent}`, player } };
 }

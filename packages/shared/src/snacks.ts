@@ -15,6 +15,7 @@ import type {
   PublicGame,
   RosterMember,
 } from "./schemas.js";
+import { formatDate, formatKickoff } from "./format.js";
 import { renderTemplate } from "./templates.js";
 
 /** Calendar date (YYYY-MM-DD) of `now` in the team's time zone, not in UTC. */
@@ -163,16 +164,17 @@ export interface EmailSite {
   templates: EmailTemplates;
 }
 
+/** "9/19 at 10:00 AM vs Red Dragons" – the same words the page uses. */
 export function describeGame(game: Game): string {
-  return `${game.date} at ${game.kickoff} vs ${game.opponent}`;
+  return `${formatDate(game.date)} at ${formatKickoff(game.kickoff)} vs ${game.opponent}`;
 }
 
 function gameVars(game: Game, site: EmailSite): Record<string, string> {
   return {
     team: site.teamName,
     game: describeGame(game),
-    date: game.date,
-    kickoff: game.kickoff,
+    date: formatDate(game.date),
+    kickoff: formatKickoff(game.kickoff),
     opponent: game.opponent,
     site_url: site.siteUrl,
   };

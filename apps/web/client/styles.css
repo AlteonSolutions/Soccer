@@ -119,6 +119,7 @@ main {
 .intro {
   margin: 0 0.25rem 1.25rem;
   color: var(--ink);
+  text-align: center;
 }
 .intro p {
   margin: 0;
@@ -445,14 +446,63 @@ td {
   border-top: 1px solid var(--line);
   vertical-align: middle;
 }
+td.one-line {
+  white-space: nowrap;
+}
 td.actions {
   white-space: nowrap;
   text-align: right;
+  position: relative;
 }
 td.actions button {
   padding: 0.45rem 0.85rem;
   font-size: 0.9rem;
   margin-left: 0.35rem;
+}
+td.actions .dots {
+  padding: 0.3rem 0.7rem;
+  font-size: 1.15rem;
+  line-height: 1;
+  letter-spacing: 0.05em;
+}
+/* The three-dots menu: absolutely placed under its button, one open at a time (admin.ts). */
+.row-menu {
+  position: absolute;
+  right: 0.6rem;
+  top: calc(100% - 0.4rem);
+  z-index: 5;
+  min-width: 11rem;
+  padding: 0.35rem;
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  display: grid;
+  text-align: left;
+}
+.row-menu[hidden] {
+  display: none;
+}
+.row-menu button {
+  margin: 0;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--navy);
+  box-shadow: none;
+  padding: 0.55rem 0.75rem;
+}
+.row-menu button:hover {
+  background: var(--sky-tint);
+  color: var(--navy);
+}
+.row-menu button.danger {
+  color: var(--danger);
+}
+.row-menu button.danger:hover {
+  background: #fff3f2;
 }
 td .sub {
   display: block;
@@ -462,13 +512,6 @@ td .sub {
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.9rem;
-}
-
-footer {
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.85rem;
-  padding: 1rem;
 }
 
 .import-form {

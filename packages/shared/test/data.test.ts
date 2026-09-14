@@ -1,7 +1,9 @@
 import { connect } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withData } from "../src/data.js";
+import { loadSettings } from "../src/settings.js";
 import { DEFAULT_TEMPLATES } from "../src/templates.js";
+import type { Settings } from "../src/schemas.js";
 import { claim, game } from "./fixtures.js";
 
 // Runs against Azurite's table endpoint when it is up (`pnpm run dev:storage`) and skips itself
@@ -134,6 +136,26 @@ describe("withData against Azurite", async () => {
     // neither as a column, and the read must still succeed with the defaults.
     const fresh = { ...settings, coach_email: "", allergies: "", logo_updated_at: null };
     await withData((repo) => repo.putSettings(fresh));
-    expect(await withData((repo) => repo.getSettings())).toEqual(fresh);
+    // Read through the resolver: the repo hands the row back as stored (no null column).
+    expect(await withData((repo) => loadSettings(repo, "Fallback"))).toEqual(fresh);
+
+    // A row saved by an older version: templates without To/BCC, no coach_email column. The
+    // repo hands it back as stored and resolveSettings fills the gaps; the site stayed up.
+    const older = {
+      team_name: `Older ${suffix}`,
+      allergies: "",
+      logo_updated_at: null,
+      templates: { team_reminder: { subject: "Saturday!", text: "Game {{game}}." } },
+    } as unknown as Settings;
+    await withData((repo) => repo.putSettings(older));
+    const resolved = await withData((repo) => loadSettings(repo, "Fallback"));
+    expect(resolved.team_name).toBe(`Older ${suffix}`);
+    expect(resolved.coach_email).toBe("");
+    expect(resolved.templates.team_reminder).toEqual({
+      ...DEFAULT_TEMPLATES.team_reminder,
+      subject: "Saturday!",
+      text: "Game {{game}}.",
+    });
+    expect(resolved.templates.snack_reminder).toEqual(DEFAULT_TEMPLATES.snack_reminder);
   });
 });

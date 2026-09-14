@@ -12,7 +12,7 @@
  */
 export { ConfigError, loadConfig, parseEnv, type Config } from "./config.js";
 export { AppError, type AppErrorCode } from "./errors.js";
-export { withData, type DataRepo } from "./data.js";
+export { withData, type DataRepo, type StoredSettings } from "./data.js";
 export { createMemoryRepo } from "./data-memory.js";
 export {
   chunkRecipients,

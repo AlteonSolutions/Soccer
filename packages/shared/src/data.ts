@@ -56,8 +56,13 @@ export interface DataRepo {
   /** Upsert by player: re-adding a player replaces their row (the coach correcting an email). */
   addRosterMembers(members: RosterMember[]): Promise<void>;
   removeRosterMember(player: string): Promise<void>;
-  /** The stored settings row, or undefined on a fresh site. Callers resolve defaults. */
-  getSettings(): Promise<Settings | undefined>;
+  /**
+   * The stored settings row as written, or undefined on a fresh site. Not validated here: a row
+   * saved before a field existed (templates without To/BCC, no coach email) must still load, so
+   * `resolveSettings` merges it over the defaults and validates the result. Validating in the
+   * repo took the whole site down twice when a field was added.
+   */
+  getSettings(): Promise<StoredSettings | undefined>;
   putSettings(settings: Settings): Promise<void>;
   getLogo(): Promise<LogoAsset | undefined>;
   putLogo(logo: LogoAsset): Promise<void>;
@@ -177,7 +182,10 @@ function packSettings(settings: Settings): Record<string, unknown> {
   return { ...rest, templates_json: JSON.stringify(templates) };
 }
 
-function toSettings(entity: Record<string, unknown>): Settings {
+/** What the settings row looks like on the way out: our columns, `templates` unpacked, unchecked. */
+export type StoredSettings = Record<string, unknown>;
+
+function toSettings(entity: Record<string, unknown>): StoredSettings {
   const raw = entity["templates_json"];
   let templates: unknown = undefined;
   if (typeof raw === "string") {
@@ -187,7 +195,7 @@ function toSettings(entity: Record<string, unknown>): Settings {
       templates = raw;
     }
   }
-  return settingsSchema.parse(pickColumns({ ...entity, templates }, SETTINGS_COLUMNS));
+  return pickColumns({ ...entity, templates }, SETTINGS_COLUMNS);
 }
 
 function toClaim(entity: Record<string, unknown>): Claim {

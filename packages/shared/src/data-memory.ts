@@ -5,13 +5,13 @@
  * an interface, not code, so a bug in the emulator double cannot hide a bug in the real repo.
  */
 import { AppError } from "./errors.js";
-import type { DataRepo } from "./data.js";
+import type { DataRepo, StoredSettings } from "./data.js";
 import type { Claim, Game, LogoAsset, RosterMember, Settings } from "./schemas.js";
 
 export function createMemoryRepo(
   seed: { games?: Game[]; claims?: Claim[]; roster?: RosterMember[]; settings?: Settings } = {},
 ): DataRepo {
-  let settings: Settings | undefined = seed.settings;
+  let settings: StoredSettings | undefined = seed.settings;
   let logo: LogoAsset | undefined;
   const games = new Map((seed.games ?? []).map((g) => [g.id, g]));
   const claims = new Map((seed.claims ?? []).map((c) => [c.game_id, c]));

@@ -7,7 +7,8 @@
  * across three parallel copies of one function. Import from here; never redeclare a shape locally.
  *
  * Consumed as source: `exports` points at `.ts`, and every app bundles it with esbuild. The browser
- * client imports types only, from "@soccer/shared/schemas", which has no Node dependencies.
+ * client imports types from "@soccer/shared/schemas" and the date/time formatters from
+ * "@soccer/shared/format"; both have no Node dependencies.
  */
 export { ConfigError, loadConfig, parseEnv, type Config } from "./config.js";
 export { AppError, type AppErrorCode } from "./errors.js";
@@ -23,6 +24,7 @@ export {
 } from "./email.js";
 export * from "./schemas.js";
 export * from "./snacks.js";
+export { dateParts, formatDate, formatKickoff } from "./format.js";
 export { runReminders, type RunContext, type RunSummary } from "./reminders.js";
 export {
   DEFAULT_TEMPLATES,

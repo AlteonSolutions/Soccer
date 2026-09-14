@@ -36,10 +36,10 @@ describe("renderTemplate", () => {
       },
     };
     const copy = confirmationEmail(game(), claim(), site);
-    expect(copy.subject).toBe("Snacks on 2026-09-19 – thank you!");
-    expect(copy.text).toBe("Leo Rivera vs Red Dragons at 10:00. https://example.org");
+    expect(copy.subject).toBe("Snacks on 9/19 – thank you!");
+    expect(copy.text).toBe("Leo Rivera vs Red Dragons at 10:00 AM. https://example.org");
     const nudge = unclaimedNudgeEmail([game()], site);
     expect(nudge.subject).toBe("City: 1 upcoming game(s) with no snack sign-up");
-    expect(nudge.text).toContain("  - 2026-09-19 at 10:00 vs Red Dragons");
+    expect(nudge.text).toContain("  - 9/19 at 10:00 AM vs Red Dragons");
   });
 });

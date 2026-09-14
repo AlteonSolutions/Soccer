@@ -16,7 +16,8 @@ for parents.
   installed on the platform. The daily reminder run is an API endpoint a Logic App calls.
 - Shared types and schemas: `packages/shared` (`@soccer/shared`). Import them; never redeclare a
   shape locally. It is consumed as **source** by tsc, Vitest and esbuild alike; it has no build.
-  Browser code imports types only, from `@soccer/shared/schemas`.
+  Browser code imports types from `@soccer/shared/schemas` and the date/time formatters from
+  `@soccer/shared/format`; nothing else from shared, since the rest pulls in Node SDKs.
 - Hosting: Azure, lowest tier — Static Web Apps Free, Table Storage, Communication Services Email,
   a Logic App for the daily schedule. `infra/main.bicep` is the source of truth once applied;
   its first line says whether it has been. Deploys run from `main` only, after the gate.

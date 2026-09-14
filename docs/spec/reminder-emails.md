@@ -21,7 +21,8 @@ Every email is plain text, from `EMAIL_FROM` on the verified domain, with the si
 
 The subject and body of all four emails are templates the coach edits on the admin page ("Email
 Templates"), stored with the site settings. `{{placeholders}}` are filled when the email is sent:
-`team`, `game` (date, kickoff and opponent), `date`, `kickoff`, `opponent`, `site_url`, plus
+`team`, `game` ("9/19 at 10:00 AM vs Red Dragons"), `date` ("9/19"), `kickoff` ("10:00 AM"),
+`opponent`, `site_url`, plus
 `player` (confirmation, snack reminder), `snacks` (team reminder: who has snacks, or that the slot
 is open) and `count`/`games` (coach nudge). A placeholder the email does not know stays in the
 text as written, so a typo is visible rather than silent. The defaults live in

@@ -11,6 +11,20 @@ old one. Entry format:
 **Consequence.** What this costs or constrains. Supersedes: <date, or "none">.
 ```
 
+### 2026-09-14 — Dates read "9/19" everywhere, from one shared formatter the browser may import
+**Context.** The page said "Sat, Sep 19", the emails said "2026-09-19 at 10:00", and the coach
+asked for m/d everywhere with no weekday or year. Two formatters, one per runtime, is exactly the
+drift the shared package exists to prevent.
+**Decision.** `packages/shared/src/format.ts` (`formatDate`, `formatKickoff`, `dateParts`) has
+no dependencies and is exported as `@soccer/shared/format`; the pages and the email builders
+both use it. The browser rule becomes: types from `./schemas`, formatters from `./format`,
+nothing else from shared.
+**Rejected.** A copy in the client marked `_`-prefixed per the house rule for unavoidable
+copies: it was avoidable.
+**Consequence.** A second shared entry point the browser bundles; it must stay free of Node
+imports (the client typecheck would fail loudly if it did not). Supersedes: the "types only"
+wording of the 2026-09-07 source-consumption entry.
+
 ### 2026-09-14 — The coach's settings live in storage, not in the environment
 **Context.** The team name was `TEAM_NAME`, an app setting only a redeploy changes, and the email
 wording was code. The coach asked to rename the team, upload a badge, state allergies and edit the

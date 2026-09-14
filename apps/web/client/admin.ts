@@ -12,7 +12,7 @@ import type {
   Settings,
 } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
-import { formatDate, formatKickoff } from "./lib/format.js";
+import { formatDate, formatKickoff } from "@soccer/shared/format";
 import { parseRosterLines } from "./lib/roster.js";
 
 const status = document.getElementById("status") as HTMLParagraphElement;

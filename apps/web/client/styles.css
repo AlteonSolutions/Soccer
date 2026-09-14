@@ -184,12 +184,6 @@ main {
   font-weight: 800;
   letter-spacing: -0.02em;
 }
-.date-tile .weekday {
-  display: block;
-  font-size: 0.7rem;
-  opacity: 0.8;
-  margin-top: 0.15rem;
-}
 .game h2 {
   margin: 0;
   font-size: 1.15rem;

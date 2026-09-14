@@ -1,5 +1,5 @@
 /*
- * Every shape that crosses a boundary — HTTP body, table row, email — is declared here once as a
+ * Every shape that crosses a boundary – HTTP body, table row, email – is declared here once as a
  * zod schema, and the TypeScript type is inferred from it. Pure: imports only zod, so the browser
  * client can `import type` from "@soccer/shared/schemas" without dragging in Node-only modules.
  *
@@ -63,7 +63,7 @@ export const claimInputSchema = z
   .strict();
 export type ClaimInput = z.infer<typeof claimInputSchema>;
 
-/** A stored claim: which player, when. No email lives here — addresses are looked up on the team list at send time. */
+/** A stored claim: which player, when. No email lives here – addresses are looked up on the team list at send time. */
 export const claimSchema = claimInputSchema
   .extend({
     created_at: z.iso.datetime(),
@@ -133,6 +133,16 @@ export const settingsInputSchema = z
   })
   .strict();
 export type SettingsInput = z.infer<typeof settingsInputSchema>;
+
+/** One template as typed on the admin page, to be rendered with real values before saving. */
+export const emailPreviewInputSchema = z
+  .object({
+    team_name: z.string().trim().min(1).max(60),
+    kind: z.enum(EMAIL_KINDS),
+    template: emailTemplateSchema,
+  })
+  .strict();
+export type EmailPreviewInput = z.infer<typeof emailPreviewInputSchema>;
 
 /** The effective settings: the input plus the state of the uploaded badge. */
 export const settingsSchema = settingsInputSchema

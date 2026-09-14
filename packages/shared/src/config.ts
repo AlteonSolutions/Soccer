@@ -3,7 +3,7 @@
  *
  * Why it exists: one audited project read `process.env` in 36 places and could enumerate its own
  * configuration only by grep. Here every variable is declared once, validated once, and a missing
- * or malformed value fails at startup with the variable's name and what to do about it — not
+ * or malformed value fails at startup with the variable's name and what to do about it – not
  * later, somewhere else, as `undefined`.
  *
  * What breaks without it: a typo'd variable name silently becomes a default; a bad PORT becomes

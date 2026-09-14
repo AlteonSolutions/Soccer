@@ -3,10 +3,12 @@ import { describe, expect, it } from "vitest";
 import {
   getSettings,
   MAX_LOGO_BYTES,
+  previewEmail,
   putLogo,
   removeLogo,
   updateSettings,
 } from "../api/src/lib/settings.js";
+import { claim, game, member } from "../../../packages/shared/test/fixtures.js";
 
 const now = new Date("2026-09-14T10:00:00Z");
 
@@ -65,5 +67,59 @@ describe("settings", () => {
       putLogo(repo, "Our Team", "image/png", new Uint8Array(MAX_LOGO_BYTES + 1), now),
     ).rejects.toMatchObject({ code: "VALIDATION" });
     expect(await repo.getLogo()).toBeUndefined();
+  });
+});
+
+describe("previewEmail", () => {
+  it("fills the template as typed from the next game and its sign-up, without saving it", async () => {
+    const repo = createMemoryRepo({
+      games: [game({ id: "2026-09-12-past", date: "2026-09-12", opponent: "Past" }), game()],
+      claims: [claim()],
+      roster: [member({ player: "Mia Chen" })],
+    });
+    const preview = await previewEmail(
+      repo,
+      {
+        team_name: "Snack City",
+        kind: "snack_reminder",
+        template: { subject: "{{team}} snacks {{date}}", text: "{{player}} vs {{opponent}}" },
+      },
+      "https://example.org",
+      "Our Team",
+      "2026-09-14",
+    );
+    expect(preview.subject).toBe("Snack City snacks 2026-09-19");
+    expect(preview.text).toBe("Leo Rivera vs Red Dragons");
+    expect(preview.based_on).toEqual({ game: "2026-09-19 vs Red Dragons", player: "Leo Rivera" });
+    expect((await getSettings(repo, "Our Team")).settings.templates).toEqual(DEFAULT_TEMPLATES);
+  });
+
+  it("falls back to the first player, then to a sample game, when there is nothing to show", async () => {
+    const withRoster = await previewEmail(
+      createMemoryRepo({ games: [game()], roster: [member({ player: "Mia Chen" })] }),
+      {
+        team_name: "T",
+        kind: "claim_confirmation",
+        template: { subject: "s", text: "{{player}}" },
+      },
+      "https://example.org",
+      "Our Team",
+      "2026-09-14",
+    );
+    expect(withRoster.text).toBe("Mia Chen");
+    const empty = await previewEmail(
+      createMemoryRepo(),
+      {
+        team_name: "T",
+        kind: "coach_nudge",
+        template: { subject: "{{count}}", text: "{{games}}" },
+      },
+      "https://example.org",
+      "Our Team",
+      "2026-09-14",
+    );
+    expect(empty.subject).toBe("1");
+    expect(empty.text).toContain("Red Dragons");
+    expect(empty.based_on.player).toBe("Leo Rivera");
   });
 });

@@ -2,7 +2,7 @@
  * The scheduler's door into the API. An Azure Logic App calls POST /api/jobs/reminders once a day
  * with a shared secret; this decides whether to let it in. Exists because Static Web Apps Free has
  * no timer triggers and the subscription had no Consumption-plan quota for a separate Function
- * App — so the schedule lives in a Logic App and the run lives here.
+ * App – so the schedule lives in a Logic App and the run lives here.
  *
  * The comparison is constant-time: a plain `===` on secrets leaks their length and prefix through
  * timing, and there is no reason to hand that out.
@@ -27,7 +27,7 @@ export function requireJobKey(
     throw new AppError(
       "FORBIDDEN",
       "Not allowed.",
-      "x-job-key did not match JOB_KEY. If the Logic App was redeployed, both come from the same Bicep run — redeploy it.",
+      "x-job-key did not match JOB_KEY. If the Logic App was redeployed, both come from the same Bicep run – redeploy it.",
     );
   }
 }

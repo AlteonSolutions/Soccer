@@ -25,7 +25,10 @@ Templates"), stored with the site settings. `{{placeholders}}` are filled when t
 `player` (confirmation, snack reminder), `snacks` (team reminder: who has snacks, or that the slot
 is open) and `count`/`games` (coach nudge). A placeholder the email does not know stays in the
 text as written, so a typo is visible rather than silent. The defaults live in
-`packages/shared/src/templates.ts`; "Reset To Default" restores them. The team name in every
+`packages/shared/src/templates.ts`; "Reset To Default" restores them. "Preview" renders the
+template as typed through the same builders that send the real emails, filled from the next game
+on the schedule and the family signed up for it (or the first player on the team list, or a
+sample game when the schedule is empty), so the coach sees the exact email before saving. The team name in every
 email is the one from the settings, not `TEAM_NAME`.
 
 ## The team list

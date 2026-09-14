@@ -1,7 +1,7 @@
 /*
  * The snack sign-up and reminder rules, as pure functions of (games, claims, roster, today). No
  * storage, no HTTP, no email client: everything here is called from route handlers and the
- * reminder timer and is tested directly. The quiet failures live here — a parent's email leaking
+ * reminder timer and is tested directly. The quiet failures live here – a parent's email leaking
  * into the public view, a reminder going out twice, a claim accepted for a game already played.
  *
  * The week, as the coach described it: games are on Saturday. Monday, the family on snacks gets
@@ -115,7 +115,7 @@ export interface SnackReminderDue {
 
 /**
  * Monday's list: claims for games in the coming week that have not been reminded. `reminded_at`
- * is the idempotency key — the timer runs daily and must never send twice.
+ * is the idempotency key – the timer runs daily and must never send twice.
  */
 export function selectSnackReminders(
   games: readonly Game[],
@@ -139,7 +139,7 @@ export function selectTeamReminders(games: readonly Game[], today: string): Game
   );
 }
 
-/** Games in the coming week that nobody has signed up for — the coach's Monday nudge. */
+/** Games in the coming week that nobody has signed up for – the coach's Monday nudge. */
 export function selectUnclaimed(
   games: readonly Game[],
   claims: readonly Claim[],
@@ -200,7 +200,7 @@ export function teamReminderEmail(
 ): EmailCopy {
   const snacks = claim
     ? `Snacks: ${claim.player}'s family.`
-    : `Snacks: nobody has signed up yet — grab the slot at ${site.siteUrl}`;
+    : `Snacks: nobody has signed up yet – grab the slot at ${site.siteUrl}`;
   return renderTemplate(site.templates.team_reminder, { ...gameVars(game, site), snacks });
 }
 

@@ -1,6 +1,6 @@
 /*
  * The public page: the schedule with a Sign Up button per open game. Rendering is plain DOM; the
- * logic worth testing is in lib/. State lives on the server — every action re-fetches.
+ * logic worth testing is in lib/. State lives on the server – every action re-fetches.
  */
 import type { PublicGame, ScheduleResponse } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
@@ -28,7 +28,7 @@ function todayIso(): string {
 let players: string[] = [];
 
 /**
- * Two steps: pick the player from the team list, then confirm. No email is asked for — the
+ * Two steps: pick the player from the team list, then confirm. No email is asked for – the
  * confirmation goes to the address the coach has on file for that player (the footer says so).
  */
 function claimForm(game: PublicGame, onDone: () => void): HTMLFormElement {

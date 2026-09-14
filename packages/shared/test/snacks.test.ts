@@ -164,7 +164,7 @@ describe("roster views", () => {
 describe("emails", () => {
   it("snack reminder names the player, the game and the site", () => {
     const copy = reminderEmail(game(), claim(), site);
-    expect(copy.subject).toBe("Manchester City: snacks this week — 2026-09-19");
+    expect(copy.subject).toBe("Manchester City: snacks this week – 2026-09-19");
     expect(copy.text).toContain("Leo Rivera's family");
     expect(copy.text).toContain("Red Dragons");
     expect(copy.text).toContain("https://example.org");

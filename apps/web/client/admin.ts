@@ -332,7 +332,7 @@ function collectSettings(): {
   ) as Record<EmailKind, { subject: string; text: string }>;
   return {
     team_name: (settingsForm.elements.namedItem("team_name") as HTMLInputElement).value,
-    allergies: (settingsForm.elements.namedItem("allergies") as HTMLTextAreaElement).value,
+    allergies: (settingsForm.elements.namedItem("allergies") as HTMLInputElement).value,
     templates,
   };
 }

@@ -84,7 +84,7 @@ export type PublicGame = z.infer<typeof publicGameSchema>;
 export const scheduleResponseSchema = z
   .object({
     team_name: z.string(),
-    // Free text the coach writes ("no peanuts"); shown above the games, empty when unset.
+    // The coach's comma-separated allergy list ("peanut, tree nut"); the page makes a sentence.
     allergies: z.string(),
     // Versioned URL of the uploaded badge, or null to use the built-in one.
     logo_url: z.string().nullable(),
@@ -127,7 +127,7 @@ export type EmailTemplates = z.infer<typeof emailTemplatesSchema>;
 export const settingsInputSchema = z
   .object({
     team_name: z.string().trim().min(1).max(60),
-    // 300 characters: a sentence or two ("no peanuts or tree nuts"), not a policy document.
+    // 300 characters: a comma-separated list ("peanut, tree nut"), not a policy document.
     allergies: z.string().trim().max(300),
     templates: emailTemplatesSchema,
   })

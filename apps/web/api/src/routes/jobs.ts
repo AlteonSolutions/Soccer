@@ -1,5 +1,12 @@
 import { app, type HttpRequest, type InvocationContext } from "@azure/functions";
-import { loadConfig, localDateIso, runReminders, sendEmail, withData } from "@soccer/shared";
+import {
+  loadConfig,
+  loadSettings,
+  localDateIso,
+  runReminders,
+  sendEmail,
+  withData,
+} from "@soccer/shared";
 import { json, toErrorResponse } from "../lib/http.js";
 import { requireJobKey } from "../lib/jobs.js";
 
@@ -14,17 +21,19 @@ app.http("jobs-reminders", {
       const config = loadConfig();
       requireJobKey(request.headers.get("x-job-key"), config.JOB_KEY);
       const now = new Date();
-      const summary = await withData((repo) =>
-        runReminders(repo, {
+      const summary = await withData(async (repo) => {
+        const settings = await loadSettings(repo, config.TEAM_NAME);
+        return runReminders(repo, {
           now,
           today: localDateIso(now, config.TIMEZONE),
-          teamName: config.TEAM_NAME,
+          teamName: settings.team_name,
           siteUrl: config.SITE_URL,
+          templates: settings.templates,
           coachEmail: config.COACH_EMAIL,
           sendEmail,
           log: (line) => context.log(line),
-        }),
-      );
+        });
+      });
       return json(200, summary);
     } catch (error) {
       return toErrorResponse(error, context);

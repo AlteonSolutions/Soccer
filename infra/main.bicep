@@ -5,7 +5,8 @@
 // snaccer-comms, snaccer-insights, snaccer-reminders-schedule.
 //
 // Everything the app needs, at the lowest tier that works:
-//   - one storage account: Table Storage for the app
+//   - one storage account: Table Storage for the app, plus one blob (the uploaded badge; the
+//     container is created by the app on first use, like the roster and settings tables)
 //   - Static Web Apps Free: the site, its HTTP API (managed Functions), custom domain + TLS, auth
 //   - Communication Services + Email Service: outbound mail from your domain (Azure-managed
 //     domain first; switch to the custom one after DNS verification — see the runbook)

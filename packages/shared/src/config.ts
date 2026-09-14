@@ -39,6 +39,7 @@ const envSchema = z
     // 32+ characters: long enough that guessing is not a plan; the job it guards is idempotent anyway.
     JOB_KEY: z.string().min(32).optional(),
 
+    // Fallback only: the coach's saved settings (admin page) name the team once they exist.
     TEAM_NAME: z.string().trim().min(1).max(60).default("Our Team"),
     // Used in emails as the link back to the site. 4280 is the SWA CLI's default local port.
     SITE_URL: z.url().default("http://localhost:4280"),

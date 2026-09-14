@@ -7,7 +7,15 @@
  * The week, as the coach described it: games are on Saturday. Monday, the family on snacks gets
  * a reminder. Thursday, the whole roster gets a reminder about Saturday's game.
  */
-import type { Claim, Game, NewGameInput, PublicGame, RosterMember } from "./schemas.js";
+import type {
+  Claim,
+  EmailTemplates,
+  Game,
+  NewGameInput,
+  PublicGame,
+  RosterMember,
+} from "./schemas.js";
+import { renderTemplate } from "./templates.js";
 
 /** Calendar date (YYYY-MM-DD) of `now` in the team's time zone, not in UTC. */
 export function localDateIso(now: Date, timeZone: string): string {
@@ -148,69 +156,60 @@ export interface EmailCopy {
   text: string;
 }
 
+/** What every email needs besides its own subject: the team, the site link and the coach's copy. */
+export interface EmailSite {
+  teamName: string;
+  siteUrl: string;
+  templates: EmailTemplates;
+}
+
 export function describeGame(game: Game): string {
   return `${game.date} at ${game.kickoff} vs ${game.opponent}`;
 }
 
-export function confirmationEmail(
-  game: Game,
-  claim: Claim,
-  teamName: string,
-  siteUrl: string,
-): EmailCopy {
+function gameVars(game: Game, site: EmailSite): Record<string, string> {
   return {
-    subject: `${teamName}: you're on snacks for ${game.date}`,
-    text:
-      `Hi,\n\n` +
-      `${claim.player}'s family is signed up to bring snacks for the ${teamName} game on ${describeGame(game)}.\n\n` +
-      `We'll send one reminder on the Monday before. If plans change, let the coach know.\n\n` +
-      `Schedule: ${siteUrl}\n`,
+    team: site.teamName,
+    game: describeGame(game),
+    date: game.date,
+    kickoff: game.kickoff,
+    opponent: game.opponent,
+    site_url: site.siteUrl,
   };
 }
 
-export function reminderEmail(
-  game: Game,
-  claim: Claim,
-  teamName: string,
-  siteUrl: string,
-): EmailCopy {
-  return {
-    subject: `${teamName}: snacks this week — ${game.date}`,
-    text:
-      `Hi,\n\n` +
-      `Quick reminder: ${claim.player}'s family is bringing snacks for the ${teamName} game on ${describeGame(game)}.\n\n` +
-      `Thank you!\n\nSchedule: ${siteUrl}\n`,
-  };
+export function confirmationEmail(game: Game, claim: Claim, site: EmailSite): EmailCopy {
+  return renderTemplate(site.templates.claim_confirmation, {
+    ...gameVars(game, site),
+    player: claim.player,
+  });
+}
+
+export function reminderEmail(game: Game, claim: Claim, site: EmailSite): EmailCopy {
+  return renderTemplate(site.templates.snack_reminder, {
+    ...gameVars(game, site),
+    player: claim.player,
+  });
 }
 
 /** Thursday's note to every family. Names the player whose family has snacks; never an email. */
 export function teamReminderEmail(
   game: Game,
   claim: Claim | undefined,
-  teamName: string,
-  siteUrl: string,
+  site: EmailSite,
 ): EmailCopy {
   const snacks = claim
     ? `Snacks: ${claim.player}'s family.`
-    : `Snacks: nobody has signed up yet — grab the slot at ${siteUrl}`;
-  return {
-    subject: `${teamName}: game this Saturday vs ${game.opponent}`,
-    text:
-      `Hi ${teamName} families,\n\n` +
-      `Reminder: game on ${describeGame(game)}.\n\n` +
-      `${snacks}\n\n` +
-      `See you there!\n\nSchedule: ${siteUrl}\n`,
-  };
+    : `Snacks: nobody has signed up yet — grab the slot at ${site.siteUrl}`;
+  return renderTemplate(site.templates.team_reminder, { ...gameVars(game, site), snacks });
 }
 
-export function unclaimedNudgeEmail(
-  games: readonly Game[],
-  teamName: string,
-  siteUrl: string,
-): EmailCopy {
+export function unclaimedNudgeEmail(games: readonly Game[], site: EmailSite): EmailCopy {
   const list = games.map((g) => `  - ${describeGame(g)}`).join("\n");
-  return {
-    subject: `${teamName}: ${games.length} upcoming game${games.length === 1 ? "" : "s"} with no snack sign-up`,
-    text: `Nobody has signed up for snacks yet for:\n\n${list}\n\nSchedule: ${siteUrl}\n`,
-  };
+  return renderTemplate(site.templates.coach_nudge, {
+    team: site.teamName,
+    count: String(games.length),
+    games: list,
+    site_url: site.siteUrl,
+  });
 }

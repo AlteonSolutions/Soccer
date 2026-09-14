@@ -7,6 +7,7 @@ import {
 } from "../src/email.js";
 import { beforeEach, describe, expect, it } from "vitest";
 import { runReminders, type RunContext } from "../src/reminders.js";
+import { DEFAULT_TEMPLATES } from "../src/templates.js";
 import { claim, game, member } from "./fixtures.js";
 
 // 2026-09-14 Monday, 2026-09-15 Tuesday, 2026-09-17 Thursday; the fixture game is Saturday the 19th.
@@ -16,6 +17,7 @@ function ctx(overrides: Partial<RunContext> = {}): RunContext {
     now: new Date("2026-09-14T14:00:00Z"),
     teamName: "Manchester City",
     siteUrl: "http://localhost:4280",
+    templates: DEFAULT_TEMPLATES,
     coachEmail: undefined,
     sendEmail,
     log: () => {},

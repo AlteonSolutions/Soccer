@@ -4,9 +4,12 @@
  */
 import type {
   AdminGame,
+  EmailKind,
+  EmailTemplates,
   ImportPreview,
   RosterImportPreview,
   RosterMember,
+  Settings,
 } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
 import { formatDate, formatKickoff } from "./lib/format.js";
@@ -29,6 +32,26 @@ const rosterPreviewNotes = document.getElementById("roster-preview-notes") as HT
 const rosterImportConfirm = document.getElementById("roster-import-confirm") as HTMLButtonElement;
 const rosterImportCancel = document.getElementById("roster-import-cancel") as HTMLButtonElement;
 const rosterForm = document.getElementById("add-roster") as HTMLFormElement;
+const settingsForm = document.getElementById("settings-form") as HTMLFormElement;
+const logoForm = document.getElementById("logo-form") as HTMLFormElement;
+const logoReset = document.getElementById("logo-reset") as HTMLButtonElement;
+const logoPreview = document.getElementById("logo-preview") as HTMLImageElement;
+const templatesForm = document.getElementById("templates-form") as HTMLFormElement;
+const templatesBox = document.getElementById("templates") as HTMLDivElement;
+const badge = document.querySelector(".hero .badge") as HTMLImageElement;
+const favicon = document.querySelector("link[rel=icon]") as HTMLLinkElement;
+
+interface EmailKindInfo {
+  kind: EmailKind;
+  title: string;
+  placeholders: Record<string, string>;
+}
+
+interface SettingsResponse {
+  settings: Settings;
+  default_templates: EmailTemplates;
+  emails: EmailKindInfo[];
+}
 
 function setStatus(text: string, isError = false): void {
   status.textContent = text;
@@ -229,14 +252,165 @@ function renderRoster(members: RosterMember[]): void {
   }
 }
 
+// ---- Site settings: team name, allergy note, badge, and the email templates. The list of emails,
+// their titles and placeholder legends come from the API, so the page holds no copy of that text.
+let defaultTemplates: EmailTemplates | undefined;
+let emailKinds: EmailKindInfo[] = [];
+
+function templateField(kind: EmailKind, field: "subject" | "text"): HTMLInputElement {
+  return templatesBox.querySelector(`[name="${kind}.${field}"]`) as HTMLInputElement;
+}
+
+function renderTemplateEditors(): void {
+  templatesBox.replaceChildren(
+    ...emailKinds.map(({ kind, title, placeholders }) => {
+      const panel = document.createElement("details");
+      panel.className = "tools";
+      const summary = document.createElement("summary");
+      summary.textContent = title;
+      const body = document.createElement("div");
+      body.className = "tool template";
+      body.innerHTML = `
+        <label>Subject <input required maxlength="200" /></label>
+        <label>Body <textarea required maxlength="4000" rows="8"></textarea></label>
+        <p class="placeholders"></p>
+        <div class="actions"><button type="button" class="secondary">Reset To Default</button></div>`;
+      (body.querySelector("input") as HTMLInputElement).name = `${kind}.subject`;
+      (body.querySelector("textarea") as HTMLTextAreaElement).name = `${kind}.text`;
+      const legend = body.querySelector(".placeholders") as HTMLParagraphElement;
+      legend.append("You can use: ");
+      Object.entries(placeholders).forEach(([name, meaning], i) => {
+        const code = document.createElement("code");
+        code.textContent = `{{${name}}}`;
+        legend.append(i === 0 ? "" : " · ", code, ` ${meaning}`);
+      });
+      (body.querySelector("button") as HTMLButtonElement).addEventListener("click", () => {
+        if (!defaultTemplates) return;
+        templateField(kind, "subject").value = defaultTemplates[kind].subject;
+        templateField(kind, "text").value = defaultTemplates[kind].text;
+      });
+      panel.append(summary, body);
+      return panel;
+    }),
+  );
+}
+
+function renderBadge(settings: Settings): void {
+  const src = settings.logo_updated_at
+    ? `/api/logo?v=${encodeURIComponent(settings.logo_updated_at)}`
+    : "/logo.svg";
+  if (badge.getAttribute("src") !== src) badge.src = src;
+  logoPreview.src = src;
+  favicon.href = src;
+  logoReset.disabled = !settings.logo_updated_at;
+}
+
+function renderSettings({ settings, default_templates, emails }: SettingsResponse): void {
+  defaultTemplates = default_templates;
+  emailKinds = emails;
+  if (templatesBox.childElementCount === 0) renderTemplateEditors();
+  (settingsForm.elements.namedItem("team_name") as HTMLInputElement).value = settings.team_name;
+  (settingsForm.elements.namedItem("allergies") as HTMLTextAreaElement).value = settings.allergies;
+  for (const { kind } of emailKinds) {
+    templateField(kind, "subject").value = settings.templates[kind].subject;
+    templateField(kind, "text").value = settings.templates[kind].text;
+  }
+  renderBadge(settings);
+}
+
+/** Everything on both forms, as one settings body: each Save button sends the whole thing. */
+function collectSettings(): {
+  team_name: string;
+  allergies: string;
+  templates: Record<EmailKind, { subject: string; text: string }>;
+} {
+  const templates = Object.fromEntries(
+    emailKinds.map(({ kind }) => [
+      kind,
+      { subject: templateField(kind, "subject").value, text: templateField(kind, "text").value },
+    ]),
+  ) as Record<EmailKind, { subject: string; text: string }>;
+  return {
+    team_name: (settingsForm.elements.namedItem("team_name") as HTMLInputElement).value,
+    allergies: (settingsForm.elements.namedItem("allergies") as HTMLTextAreaElement).value,
+    templates,
+  };
+}
+
+async function saveSettings(form: HTMLFormElement, done: string): Promise<void> {
+  const submit = form.querySelector("button[type=submit]") as HTMLButtonElement;
+  submit.disabled = true;
+  try {
+    renderSettings(
+      await request<SettingsResponse>("PUT", "/api/coach/settings", collectSettings()),
+    );
+    setStatus(done);
+  } catch (error) {
+    report(error, "Could not save the settings.");
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+settingsForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void saveSettings(settingsForm, "Settings saved. The sign-up page shows them on its next load.");
+});
+
+templatesForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  void saveSettings(templatesForm, "Templates saved. The next emails use them.");
+});
+
+logoForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const input = logoForm.querySelector("input[name=image]") as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  const submit = logoForm.querySelector("button[type=submit]") as HTMLButtonElement;
+  submit.disabled = true;
+  try {
+    const response = await fetch("/api/coach/logo", {
+      method: "POST",
+      headers: { "content-type": file.type || "application/octet-stream" },
+      body: file,
+    });
+    const payload: unknown = await response.json().catch(() => undefined);
+    if (!response.ok) {
+      const error = (payload as { error?: { message?: string } } | undefined)?.error;
+      throw new RequestError("UPLOAD", error?.message ?? "Could not upload that image.");
+    }
+    logoForm.reset();
+    renderBadge(payload as Settings);
+    setStatus("Badge updated.");
+  } catch (error) {
+    report(error, "Could not upload that image.");
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+logoReset.addEventListener("click", async () => {
+  logoReset.disabled = true;
+  try {
+    renderBadge(await request<Settings>("DELETE", "/api/coach/logo"));
+    setStatus("Back to the default badge.");
+  } catch (error) {
+    report(error, "Could not remove the badge.");
+    logoReset.disabled = false;
+  }
+});
+
 async function load(): Promise<void> {
   try {
-    const [{ games }, { members }] = await Promise.all([
+    const [{ games }, { members }, settings] = await Promise.all([
       request<{ games: AdminGame[] }>("GET", "/api/coach/games"),
       request<{ members: RosterMember[] }>("GET", "/api/coach/roster"),
+      request<SettingsResponse>("GET", "/api/coach/settings"),
     ]);
     rows.replaceChildren(...games.map(renderRow));
     renderRoster(members);
+    renderSettings(settings);
     setStatus(games.length === 0 ? "No games yet. Add the first one above." : "");
   } catch (error) {
     report(error, "Could not load the games.");

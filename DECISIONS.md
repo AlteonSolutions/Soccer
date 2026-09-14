@@ -11,6 +11,22 @@ old one. Entry format:
 **Consequence.** What this costs or constrains. Supersedes: <date, or "none">.
 ```
 
+### 2026-09-14 — The coach's settings live in storage, not in the environment
+**Context.** The team name was `TEAM_NAME`, an app setting only a redeploy changes, and the email
+wording was code. The coach asked to rename the team, upload a badge, state allergies and edit the
+emails from the admin page.
+**Decision.** One `settings` row (team name, allergy note, email templates, badge version) read
+through `withData()` and resolved over defaults by `resolveSettings`; the badge is a blob in the
+same storage account, served by `GET /api/logo` with a versioned URL. `TEAM_NAME` stays as the
+fallback for a site with no row. Email copy is `{{placeholder}}` templates with the previous
+wording as the defaults.
+**Rejected.** Keeping the badge in the table (64 KB property limit) or in the repo (a deploy per
+badge). A second storage account or a CDN for one small image.
+**Consequence.** Blob is a second storage API in `data.ts`, tested against Azurite like the
+tables. A settings edit shows on the next page load; there is no cache to purge except the
+badge, which the version in its URL handles. Supersedes: none (`TEAM_NAME` was never recorded as a decision; it is
+now the documented fallback).
+
 ### 2026-09-12 — Gate the admin API in code, not with an SWA route rule
 **Context.** First deploy. With `{ "route": "/api/admin/*", "allowedRoles": ["admin"] }` in
 `staticwebapp.config.json`, every `/api/admin/*` call returned a bare 404 — for the signed-in

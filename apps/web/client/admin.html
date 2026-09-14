@@ -139,6 +139,54 @@
         </p>
         <ul id="roster" class="roster"></ul>
       </section>
+      <section class="card">
+        <h2>Site Settings</h2>
+        <form id="settings-form" class="settings-form">
+          <label>Team Name <input name="team_name" required maxlength="60" /></label>
+          <label>
+            Food Allergies To Avoid
+            <textarea
+              name="allergies"
+              rows="2"
+              maxlength="300"
+              placeholder="e.g. No peanuts or tree nuts, please."
+            ></textarea>
+          </label>
+          <p class="hint">
+            The team name is the heading on the sign-up page and the emails. The allergy note is
+            shown above the games; leave it empty to show nothing.
+          </p>
+          <div class="actions"><button type="submit" class="primary">Save Settings</button></div>
+        </form>
+        <h3>Team Badge</h3>
+        <div class="logo-row">
+          <img id="logo-preview" src="/logo.svg" alt="" width="64" height="64" />
+          <form id="logo-form" class="import-form">
+            <input name="image" type="file" accept="image/*" required />
+            <button type="submit" class="primary">Upload Badge</button>
+            <button type="button" id="logo-reset" class="secondary">Use Default</button>
+          </form>
+        </div>
+        <p class="hint">
+          Any image file up to 2 MB. It appears in the header of both pages and as the browser tab
+          icon.
+        </p>
+      </section>
+      <section class="card">
+        <h2>Email Templates</h2>
+        <p class="hint">
+          Four emails go out: a confirmation right after a sign-up, the Monday reminder to the
+          family on snacks, the Thursday reminder to every family, and a Monday nudge to you when a
+          game has no sign-up. Words in double braces, like {{team}}, are filled in when the email
+          is sent.
+        </p>
+        <form id="templates-form">
+          <div id="templates"></div>
+          <div class="templates-actions">
+            <button type="submit" class="primary">Save Templates</button>
+          </div>
+        </form>
+      </section>
     </main>
     <script type="module" src="/admin.js"></script>
   </body>

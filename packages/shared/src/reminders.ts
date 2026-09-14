@@ -22,6 +22,7 @@ import {
   unclaimedNudgeEmail,
   weekdayOf,
   type DataRepo,
+  type EmailTemplates,
   type SendEmail,
 } from "./index.js";
 
@@ -30,6 +31,8 @@ export interface RunContext {
   now: Date;
   teamName: string;
   siteUrl: string;
+  /** The coach's email copy, from the site settings. */
+  templates: EmailTemplates;
   coachEmail: string | undefined;
   sendEmail: SendEmail;
   log: (line: string) => void;
@@ -84,7 +87,7 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
         );
         continue;
       }
-      const copy = reminderEmail(game, claim, ctx.teamName, ctx.siteUrl);
+      const copy = reminderEmail(game, claim, ctx);
       let delivered = 0;
       for (const to of recipients) {
         try {
@@ -117,7 +120,7 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
       try {
         await ctx.sendEmail({
           to: ctx.coachEmail,
-          ...unclaimedNudgeEmail(unclaimed, ctx.teamName, ctx.siteUrl),
+          ...unclaimedNudgeEmail(unclaimed, ctx),
         });
         summary.coach_nudged = true;
       } catch (error) {
@@ -135,7 +138,7 @@ export async function runReminders(repo: DataRepo, ctx: RunContext): Promise<Run
     const claimByGame = new Map(claims.map((c) => [c.game_id, c]));
     for (const game of selectTeamReminders(games, ctx.today)) {
       const claim = claimByGame.get(game.id);
-      const copy = teamReminderEmail(game, claim, ctx.teamName, ctx.siteUrl);
+      const copy = teamReminderEmail(game, claim, ctx);
       // One email per address, nobody sees anyone else's. The snack family is on the list too.
       // Sent in parallel: the Static Web Apps API allows 45 seconds per request, and a team is
       // twenty-odd addresses at a few seconds each.

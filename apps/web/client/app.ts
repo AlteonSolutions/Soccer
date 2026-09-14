@@ -9,6 +9,11 @@ import { dateParts, describeSnack, formatDate, formatKickoff } from "./lib/forma
 const status = document.getElementById("status") as HTMLParagraphElement;
 const list = document.getElementById("games") as HTMLUListElement;
 const heading = document.getElementById("team-name") as HTMLHeadingElement;
+const intro = document.getElementById("intro") as HTMLElement;
+const introLead = document.getElementById("intro-lead") as HTMLParagraphElement;
+const introAllergies = document.getElementById("intro-allergies") as HTMLParagraphElement;
+const badge = document.querySelector(".hero .badge") as HTMLImageElement;
+const favicon = document.querySelector("link[rel=icon]") as HTMLLinkElement;
 
 function setStatus(text: string, isError = false): void {
   status.textContent = text;
@@ -24,7 +29,7 @@ let players: string[] = [];
 
 /**
  * Two steps: pick the player from the team list, then confirm. No email is asked for — the
- * confirmation goes to the address the coach has on file for that player.
+ * confirmation goes to the address the coach has on file for that player (the footer says so).
  */
 function claimForm(game: PublicGame, onDone: () => void): HTMLFormElement {
   const form = document.createElement("form");
@@ -35,7 +40,6 @@ function claimForm(game: PublicGame, onDone: () => void): HTMLFormElement {
         <option value="" selected disabled>Choose a player…</option>
       </select>
     </label>
-    <p class="privacy">The confirmation and the Monday reminder go to the email the coach has on file for this player. Nothing is shown here.</p>
     <p class="confirm" hidden></p>
     <div class="actions">
       <button type="submit" class="primary" data-next>Continue</button>
@@ -134,12 +138,41 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
   return item;
 }
 
+/** The note above the games: how big the team is, a thank-you, and any allergies to avoid. */
+function renderIntro(schedule: ScheduleResponse): void {
+  const count = schedule.players.length;
+  introLead.replaceChildren();
+  const strong = document.createElement("strong");
+  strong.textContent = `${count} player${count === 1 ? "" : "s"}`;
+  introLead.append(
+    strong,
+    ` on the ${schedule.team_name} roster. Each game, one family brings snacks for the whole team. ` +
+      "Thank you for pitching in — it makes Saturday mornings easier for everyone.",
+  );
+  introAllergies.replaceChildren();
+  if (schedule.allergies) {
+    const label = document.createElement("strong");
+    label.textContent = "Allergies to avoid: ";
+    introAllergies.append(label, schedule.allergies);
+  }
+  introAllergies.hidden = !schedule.allergies;
+  intro.hidden = false;
+}
+
+function renderBadge(logoUrl: string | null): void {
+  const src = logoUrl ?? "/logo.svg";
+  if (badge.getAttribute("src") !== src) badge.src = src;
+  favicon.href = src;
+}
+
 async function load(): Promise<void> {
   try {
     const schedule = await request<ScheduleResponse>("GET", "/api/games");
     heading.textContent = schedule.team_name;
     players = schedule.players;
     document.title = `${schedule.team_name} Snack Schedule`;
+    renderBadge(schedule.logo_url);
+    renderIntro(schedule);
     list.replaceChildren(...schedule.games.map((g) => renderGame(g, todayIso())));
     if (schedule.games.length === 0) setStatus("No games on the schedule yet.");
     else if (players.length === 0)

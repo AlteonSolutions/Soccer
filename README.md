@@ -46,7 +46,8 @@ pnpm workspaces, one lockfile. Node 22 is pinned in `package.json` `engines`, `c
 ## Architecture
 
 - **Azure, lowest tier of everything.** Static Web Apps Free hosts the site, its API and the
-  coach's sign-in, and gives the custom domain a free certificate. Table Storage holds the data.
+  coach's sign-in, and gives the custom domain a free certificate. Table Storage holds the data;
+  the uploaded badge is one blob in the same account.
   Communication Services sends email from your domain. A Logic App calls the API's reminders
   endpoint once a day, because SWA Free has no timers. Bicep in `infra/` creates all of it.
 - **TypeScript, ESM `NodeNext`**, relative imports with `.js` extensions. Every app bundles with

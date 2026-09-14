@@ -1,6 +1,8 @@
 import {
   clearCapturedEmails,
   createMemoryRepo,
+  DEFAULT_TEMPLATES,
+  defaultSettings,
   readCapturedEmails,
   sendEmail,
   type SendEmail,
@@ -16,6 +18,7 @@ function ctx(overrides: Partial<ClaimContext> = {}): ClaimContext {
     now: new Date("2026-09-10T15:00:00Z"),
     teamName: "Manchester City",
     siteUrl: "http://localhost:4280",
+    templates: DEFAULT_TEMPLATES,
     sendEmail,
     log: () => {},
     ...overrides,
@@ -97,8 +100,25 @@ describe("getSchedule", () => {
     });
     const schedule = await getSchedule(repo, "Manchester City");
     expect(schedule.team_name).toBe("Manchester City");
+    expect(schedule.allergies).toBe("");
+    expect(schedule.logo_url).toBeNull();
     expect(schedule.games[0]?.snack_by).toBe("Leo Rivera");
     expect(schedule.players).toEqual(["Leo Rivera", "Mia Chen"]);
     expect(JSON.stringify(schedule)).not.toMatch(/@/);
+  });
+
+  it("takes the team name, the allergy note and the badge from the coach's settings", async () => {
+    const repo = createMemoryRepo({
+      settings: {
+        ...defaultSettings("Our Team"),
+        team_name: "Snack City",
+        allergies: "No peanuts, please.",
+        logo_updated_at: "2026-09-14T10:00:00.000Z",
+      },
+    });
+    const schedule = await getSchedule(repo, "Manchester City");
+    expect(schedule.team_name).toBe("Snack City");
+    expect(schedule.allergies).toBe("No peanuts, please.");
+    expect(schedule.logo_url).toBe("/api/logo?v=2026-09-14T10%3A00%3A00.000Z");
   });
 });

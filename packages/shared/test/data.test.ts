@@ -125,5 +125,11 @@ describe("withData against Azurite", async () => {
     expect(await withData((repo) => repo.getLogo())).toEqual(logo);
     await withData((repo) => repo.deleteLogo());
     expect(await withData((repo) => repo.getLogo())).toBeUndefined();
+
+    // The first save on the live site: no badge (null), no allergies (""). Table Storage stores
+    // neither as a column, and the read must still succeed with the defaults.
+    const fresh = { ...settings, allergies: "", logo_updated_at: null };
+    await withData((repo) => repo.putSettings(fresh));
+    expect(await withData((repo) => repo.getSettings())).toEqual(fresh);
   });
 });

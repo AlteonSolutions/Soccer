@@ -95,36 +95,83 @@ function actionButton(
   return button;
 }
 
+/** One open row menu at a time; clicking anywhere else closes it. */
+function closeMenus(): void {
+  for (const menu of document.querySelectorAll<HTMLElement>(".row-menu")) menu.hidden = true;
+}
+document.addEventListener("click", (event) => {
+  if (!(event.target instanceof Element) || !event.target.closest(".actions")) closeMenus();
+});
+
+function menuItem(label: string, className: string, onClick: () => void): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.textContent = label;
+  button.addEventListener("click", () => {
+    closeMenus();
+    onClick();
+  });
+  return button;
+}
+
 function renderRow(game: AdminGame): HTMLTableRowElement {
   const tr = document.createElement("tr");
   const when = cell(
     `${formatDate(game.date)} · ${formatKickoff(game.kickoff)} vs ${game.opponent}`,
   );
+  when.className = "one-line";
+  const player = cell(game.claim ? game.claim.player : "–");
+  player.className = "one-line";
   const email = cell(game.claim ? game.emails.join(", ") || "not on the team list" : "–");
   email.className = "mono";
-  tr.append(when, cell(game.claim ? game.claim.player : "–"), email);
+  tr.append(when, player, email);
+
+  // The actions sit behind a three-dots button so the row stays one line; the menu holds Edit,
+  // Release Slot (when signed up) and Remove Game.
   const actions = document.createElement("td");
   actions.className = "actions";
-  // Not actionButton: that helper reloads the table after the click, which would erase the editor.
-  const edit = document.createElement("button");
-  edit.className = "secondary";
-  edit.textContent = "Edit";
-  edit.addEventListener("click", () => void editRow(tr, game));
-  actions.append(edit);
+  const toggle = document.createElement("button");
+  toggle.type = "button";
+  toggle.className = "secondary dots";
+  toggle.textContent = "\u22EF";
+  toggle.setAttribute("aria-label", `Actions for the game vs ${game.opponent}`);
+  toggle.setAttribute("aria-haspopup", "menu");
+  const menu = document.createElement("div");
+  menu.className = "row-menu";
+  menu.setAttribute("role", "menu");
+  menu.hidden = true;
+  toggle.addEventListener("click", () => {
+    const open = !menu.hidden;
+    closeMenus();
+    menu.hidden = open;
+  });
+  menu.append(menuItem("Edit", "", () => void editRow(tr, game)));
   if (game.claim) {
-    actions.append(
-      actionButton("Release Slot", "secondary", () =>
-        request("DELETE", `/api/coach/claims/${game.id}`),
-      ),
+    menu.append(
+      menuItem("Release Slot", "", async () => {
+        try {
+          await request("DELETE", `/api/coach/claims/${game.id}`);
+          await load();
+        } catch (error) {
+          report(error, "That did not work. Please try again.");
+        }
+      }),
     );
   }
-  actions.append(
-    actionButton("Remove Game", "danger", async () => {
+  menu.append(
+    menuItem("Remove Game", "danger", async () => {
       if (!window.confirm(`Remove the game vs ${game.opponent} on ${formatDate(game.date)}?`))
         return;
-      await request("DELETE", `/api/coach/games/${game.id}`);
+      try {
+        await request("DELETE", `/api/coach/games/${game.id}`);
+        await load();
+      } catch (error) {
+        report(error, "That did not work. Please try again.");
+      }
     }),
   );
+  actions.append(toggle, menu);
   tr.append(actions);
   return tr;
 }

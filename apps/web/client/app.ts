@@ -30,7 +30,7 @@ let players: string[] = [];
 
 /**
  * Two steps: pick the player from the team list, then confirm. No email is asked for – the
- * confirmation goes to the address the coach has on file for that player (the footer says so).
+ * confirmation goes to the address the coach has on file for that player.
  */
 function claimForm(game: PublicGame, onDone: () => void): HTMLFormElement {
   const form = document.createElement("form");

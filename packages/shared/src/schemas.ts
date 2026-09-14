@@ -128,7 +128,8 @@ export const settingsInputSchema = z
   .object({
     team_name: z.string().trim().min(1).max(60),
     // 300 characters: a comma-separated list ("peanut, tree nut"), not a policy document.
-    allergies: z.string().trim().max(300),
+    // Defaulted for the same reason as logo_updated_at: an empty column may not come back.
+    allergies: z.string().trim().max(300).default(""),
     templates: emailTemplatesSchema,
   })
   .strict();
@@ -148,7 +149,9 @@ export type EmailPreviewInput = z.infer<typeof emailPreviewInputSchema>;
 export const settingsSchema = settingsInputSchema
   .extend({
     // When the coach last uploaded a badge, or null for the built-in one. Doubles as the cache key.
-    logo_updated_at: z.string().nullable(),
+    // Defaulted: Table Storage drops a null column on write, so the row comes back without it. The
+    // first saved settings on the live site had no badge, and every page read 503'd until this.
+    logo_updated_at: z.string().nullable().default(null),
   })
   .strict();
 export type Settings = z.infer<typeof settingsSchema>;

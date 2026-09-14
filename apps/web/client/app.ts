@@ -4,7 +4,7 @@
  */
 import type { PublicGame, ScheduleResponse } from "@soccer/shared/schemas";
 import { request, RequestError } from "./lib/api.js";
-import { dateParts, describeSnack, formatDate, formatKickoff } from "./lib/format.js";
+import { dateParts, describeSnack, describeTeam, formatDate, formatKickoff } from "./lib/format.js";
 
 const status = document.getElementById("status") as HTMLParagraphElement;
 const list = document.getElementById("games") as HTMLUListElement;
@@ -138,24 +138,12 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
   return item;
 }
 
-/** The note above the games: how big the team is, a thank-you, and any allergies to avoid. */
+/** The note above the games: a thank-you, then the team size and its allergies in one sentence. */
 function renderIntro(schedule: ScheduleResponse): void {
-  const count = schedule.players.length;
-  introLead.replaceChildren();
-  const strong = document.createElement("strong");
-  strong.textContent = `${count} player${count === 1 ? "" : "s"}`;
-  introLead.append(
-    strong,
-    ` on the ${schedule.team_name} roster. Each game, one family brings snacks for the whole team. ` +
-      "Thank you for pitching in — it makes Saturday mornings easier for everyone.",
-  );
-  introAllergies.replaceChildren();
-  if (schedule.allergies) {
-    const label = document.createElement("strong");
-    label.textContent = "Allergies to avoid: ";
-    introAllergies.append(label, schedule.allergies);
-  }
-  introAllergies.hidden = !schedule.allergies;
+  introLead.textContent =
+    "Thank you for pitching in \u2013 let's be honest, for half the team the snacks are the main event \u2013 " +
+    "each game we need one family to bring snacks for the team.";
+  introAllergies.textContent = describeTeam(schedule.players.length, schedule.allergies);
   intro.hidden = false;
 }
 

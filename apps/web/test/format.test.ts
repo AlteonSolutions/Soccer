@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { dateParts, describeSnack, formatDate, formatKickoff } from "../client/lib/format.js";
+import {
+  dateParts,
+  describeSnack,
+  describeTeam,
+  formatDate,
+  formatKickoff,
+} from "../client/lib/format.js";
 import { parseRosterLines } from "../client/lib/roster.js";
 
 describe("format", () => {
@@ -18,6 +24,17 @@ describe("format", () => {
     expect(formatKickoff("00:05")).toBe("12:05 AM");
     expect(formatKickoff("12:30")).toBe("12:30 PM");
     expect(formatKickoff("17:45")).toBe("5:45 PM");
+  });
+
+  it("describes the team with its player count and allergies as a sentence", () => {
+    expect(describeTeam(14, "")).toBe("We have 14 players and no food allergies.");
+    expect(describeTeam(1, " peanut ")).toBe("We have 1 player and a peanut food allergy.");
+    expect(describeTeam(14, "peanut, tree nut")).toBe(
+      "We have 14 players and peanut and tree nut food allergies.",
+    );
+    expect(describeTeam(14, "peanut, tree nut, , egg,")).toBe(
+      "We have 14 players and peanut, tree nut and egg food allergies.",
+    );
   });
 
   it("describes the snack slot by name only", () => {

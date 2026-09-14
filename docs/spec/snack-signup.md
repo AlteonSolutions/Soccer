@@ -114,11 +114,12 @@ was tried first and made those routes 404 for everyone, admin included; it is de
 ## Site settings
 
 The coach edits, on the admin page: the **team name** (the heading on the sign-up page and the
-`{{team}}` in every email), a **food allergies** note (shown above the games when set), the
+`{{team}}` in every email), a comma-separated **food allergies** list, the
 **team badge** (any image up to 2 MB; the header and tab icon on both pages), and the four
 **email templates**. `TEAM_NAME` in the environment is only the fallback for a site with no
-settings row yet. The sign-up page also states the player count, always the length of the team
-list, with a thank-you line.
+settings row yet. Above the games the sign-up page shows a thank-you line and one sentence with
+the player count (always the length of the team list) and the allergies: "a peanut food
+allergy", "peanut and tree nut food allergies", or "no food allergies".
 
 ## Data
 

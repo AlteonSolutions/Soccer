@@ -15,7 +15,7 @@ import type {
   PublicGame,
   RosterMember,
 } from "./schemas.js";
-import { formatDate, formatKickoff } from "./format.js";
+import { allergyList, formatDate, formatKickoff, joinWithAnd } from "./format.js";
 import { renderTemplate } from "./templates.js";
 
 /** Calendar date (YYYY-MM-DD) of `now` in the team's time zone, not in UTC. */
@@ -161,7 +161,17 @@ export interface EmailCopy {
 export interface EmailSite {
   teamName: string;
   siteUrl: string;
+  /** The coach's comma-separated allergy list; "" when there are none. */
+  allergies: string;
   templates: EmailTemplates;
+}
+
+/** The Monday email's allergy line, or "" when the team has none (the template collapses it). */
+export function describeAllergies(allergies: string): string {
+  const list = allergyList(allergies);
+  if (list.length === 0) return "";
+  const noun = list.length === 1 ? "allergy" : "allergies";
+  return `A reminder that we have ${joinWithAnd(list)} ${noun === "allergy" ? "food allergy" : "food allergies"} on the team – please plan snacks around them.`;
 }
 
 /** "9/19 at 10:00 AM vs Red Dragons" – the same words the page uses. */
@@ -191,6 +201,7 @@ export function reminderEmail(game: Game, claim: Claim, site: EmailSite): EmailC
   return renderTemplate(site.templates.snack_reminder, {
     ...gameVars(game, site),
     player: claim.player,
+    allergies: describeAllergies(site.allergies),
   });
 }
 
@@ -201,7 +212,7 @@ export function teamReminderEmail(
   site: EmailSite,
 ): EmailCopy {
   const snacks = claim
-    ? `Snacks: ${claim.player}'s family.`
+    ? `Snacks: ${claim.player}.`
     : `Snacks: nobody has signed up yet – grab the slot at ${site.siteUrl}`;
   return renderTemplate(site.templates.team_reminder, { ...gameVars(game, site), snacks });
 }

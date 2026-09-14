@@ -26,6 +26,7 @@ app.http("claims", {
           today: localDateIso(now, config.TIMEZONE),
           teamName: settings.team_name,
           siteUrl: config.SITE_URL,
+          allergies: settings.allergies,
           templates: settings.templates,
           sendEmail,
           log: (line) => context.log(line),

@@ -11,7 +11,7 @@ the team's time zone (`TIMEZONE`):
 | Day | Email | To | Once per |
 |---|---|---|---|
 | Any | **Confirmation** — right after a sign-up. Sent by the web API. | every parent email on the team list for the chosen player | sign-up |
-| Monday | **Snack reminder** — "X's family is on snacks this week". | every parent email on the team list for the claimed player, read that morning | claim (`reminded_at`) |
+| Monday | **Snack reminder** — "X's family is on snacks this week", with the allergy reminder when set. | every parent email on the team list for the claimed player, read that morning | claim (`reminded_at`) |
 | Monday | **Coach nudge** — a game this week has nobody. Only when `COACH_EMAIL` is set. | the coach | run |
 | Thursday | **Team reminder** — "game this Saturday vs …", naming the player whose family has snacks. | every distinct parent email across the team list; one email each | game (`team_reminded_at`) |
 
@@ -22,9 +22,11 @@ Every email is plain text, from `EMAIL_FROM` on the verified domain, with the si
 The subject and body of all four emails are templates the coach edits on the admin page ("Email
 Templates"), stored with the site settings. `{{placeholders}}` are filled when the email is sent:
 `team`, `game` ("9/19 at 10:00 AM vs Red Dragons"), `date` ("9/19"), `kickoff` ("10:00 AM"),
-`opponent`, `site_url`, plus
-`player` (confirmation, snack reminder), `snacks` (team reminder: who has snacks, or that the slot
-is open) and `count`/`games` (coach nudge). A placeholder the email does not know stays in the
+`opponent`, `site_url`, plus `allergies` (snack reminder: "A reminder that we have peanut and
+tree nut food allergies on the team – please plan snacks around them.", or nothing when the coach
+has set none; a blank line left behind collapses), plus
+`player` (confirmation, snack reminder), `snacks` (team reminder: "Snacks: Leo Rivera." or that the
+slot is open) and `count`/`games` (coach nudge). A placeholder the email does not know stays in the
 text as written, so a typo is visible rather than silent. The defaults live in
 `packages/shared/src/templates.ts`; "Reset To Default" restores them. "Preview" renders the
 template as typed through the same builders that send the real emails, filled from the next game

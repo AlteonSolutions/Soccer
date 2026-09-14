@@ -24,7 +24,7 @@ export {
 } from "./email.js";
 export * from "./schemas.js";
 export * from "./snacks.js";
-export { dateParts, formatDate, formatKickoff } from "./format.js";
+export { allergyList, dateParts, formatDate, formatKickoff, joinWithAnd } from "./format.js";
 export { runReminders, type RunContext, type RunSummary } from "./reminders.js";
 export {
   DEFAULT_TEMPLATES,

@@ -2,6 +2,7 @@
  * Presentation helpers for the client, kept free of the DOM so they are tested directly. Dates
  * and kickoffs are formatted by @soccer/shared/format so the page and the emails agree.
  */
+import { allergyList, joinWithAnd } from "@soccer/shared/format";
 import type { PublicGame } from "@soccer/shared/schemas";
 
 /** "Snacks: The Nguyens" – a label, not a sentence, so plural family names never read wrong. */
@@ -14,13 +15,9 @@ export function describeSnack(game: Pick<PublicGame, "snack_by">): string {
  * `allergies` is the coach's comma-separated list; empty means none.
  */
 export function describeTeam(playerCount: number, allergies: string): string {
-  const list = allergies
-    .split(",")
-    .map((a) => a.trim())
-    .filter(Boolean);
+  const list = allergyList(allergies);
   const players = `${playerCount} player${playerCount === 1 ? "" : "s"}`;
   if (list.length === 0) return `We have ${players} and no food allergies.`;
   if (list.length === 1) return `We have ${players} and a ${list[0]} food allergy.`;
-  const joined = `${list.slice(0, -1).join(", ")} and ${list[list.length - 1]}`;
-  return `We have ${players} and ${joined} food allergies.`;
+  return `We have ${players} and ${joinWithAnd(list)} food allergies.`;
 }

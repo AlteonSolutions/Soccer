@@ -17,6 +17,7 @@ function ctx(overrides: Partial<RunContext> = {}): RunContext {
     now: new Date("2026-09-14T14:00:00Z"),
     teamName: "Manchester City",
     siteUrl: "http://localhost:4280",
+    allergies: "",
     templates: DEFAULT_TEMPLATES,
     coachEmail: undefined,
     sendEmail,
@@ -112,7 +113,7 @@ describe("runReminders", () => {
     expect(summary.team_reminders_sent).toBe(everyAddress.length);
     const sent = readCapturedEmails();
     expect(sent.map((e) => e.to).sort()).toEqual(everyAddress);
-    expect(sent[0]?.text).toContain("Snacks: Leo Rivera's family");
+    expect(sent[0]?.text).toContain("Snacks: Leo Rivera.");
     expect(sent[0]?.text).not.toContain("@example.com");
     expect((await repo.getGame(game().id))?.team_reminded_at).toBe("2026-09-17T14:00:00.000Z");
 

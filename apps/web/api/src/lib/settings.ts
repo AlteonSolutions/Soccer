@@ -165,6 +165,7 @@ export async function previewEmail(
   const site = {
     teamName: input.team_name,
     siteUrl,
+    allergies: settings.allergies,
     templates: { ...settings.templates, [input.kind]: input.template },
   };
   let copy: EmailCopy;

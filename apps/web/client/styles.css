@@ -748,3 +748,30 @@ td .sub {
   white-space: pre-wrap;
   font: inherit;
 }
+
+/* The saved-confirmation toast on the admin page: bottom centre, gone after three seconds. */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  transform: translateX(-50%);
+  z-index: 20;
+  max-width: min(40rem, calc(100% - 2rem));
+  padding: 0.8rem 1.2rem;
+  border-radius: 999px;
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  animation: toast-in 0.2s ease-out;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

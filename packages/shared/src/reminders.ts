@@ -31,6 +31,8 @@ export interface RunContext {
   now: Date;
   teamName: string;
   siteUrl: string;
+  /** The coach's allergy list, for the emails that mention it. */
+  allergies: string;
   /** The coach's email copy, from the site settings. */
   templates: EmailTemplates;
   coachEmail: string | undefined;

@@ -17,6 +17,17 @@ the team's time zone (`TIMEZONE`):
 
 Every email is plain text, from `EMAIL_FROM` on the verified domain, with the site URL at the end.
 
+## Templates
+
+The subject and body of all four emails are templates the coach edits on the admin page ("Email
+Templates"), stored with the site settings. `{{placeholders}}` are filled when the email is sent:
+`team`, `game` (date, kickoff and opponent), `date`, `kickoff`, `opponent`, `site_url`, plus
+`player` (confirmation, snack reminder), `snacks` (team reminder: who has snacks, or that the slot
+is open) and `count`/`games` (coach nudge). A placeholder the email does not know stays in the
+text as written, so a typo is visible rather than silent. The defaults live in
+`packages/shared/src/templates.ts`; "Reset To Default" restores them. The team name in every
+email is the one from the settings, not `TEAM_NAME`.
+
 ## The team list
 
 The coach keeps it on the admin page ("Team List"): one line per player, `Player Name,

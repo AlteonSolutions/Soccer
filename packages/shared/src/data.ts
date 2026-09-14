@@ -6,26 +6,34 @@
  * module-private: not exported, not reachable from tests or scripts. Anything the app needs from
  * storage is a method on `DataRepo`, added here, where the table layout is visible.
  *
- * Layout — three tables in one storage account:
- *   games   partitionKey "game"   rowKey <game id>        columns = Game fields
- *   claims  partitionKey "claim"  rowKey <game id>        columns = Claim fields
- *   roster  partitionKey "member" rowKey <player, keyed>  columns = RosterMember fields
- * Table Storage has no list column, so a roster row's `emails` is stored as a JSON string in
- * `emails_json` and unpacked here; nothing outside this file sees that column.
+ * Layout — four tables and one blob container in one storage account:
+ *   games     partitionKey "game"     rowKey <game id>        columns = Game fields
+ *   claims    partitionKey "claim"    rowKey <game id>        columns = Claim fields
+ *   roster    partitionKey "member"   rowKey <player, keyed>  columns = RosterMember fields
+ *   settings  partitionKey "settings" rowKey "site"           one row: the coach's settings
+ *   assets    (blob container)        blob "logo"             the uploaded badge, if any
+ * Table Storage has no list or object column, so a roster row's `emails` and the settings row's
+ * `templates` are stored as JSON strings (`emails_json`, `templates_json`) and unpacked here;
+ * nothing outside this file sees those columns. The badge is a blob because an image does not
+ * fit a table property (64 KB), and the container is created on first use like the tables.
  * One claim per game is enforced by the row key: a second createEntity on the same key is a 409.
  * One roster row per player (case-insensitive); re-adding a player replaces the row, which is how
  * the coach corrects an email.
  */
 import { RestError, TableClient } from "@azure/data-tables";
+import { BlobServiceClient, type ContainerClient } from "@azure/storage-blob";
 import { loadConfig } from "./config.js";
 import { AppError } from "./errors.js";
 import {
   claimSchema,
   gameSchema,
   rosterMemberSchema,
+  settingsSchema,
   type Claim,
   type Game,
+  type LogoAsset,
   type RosterMember,
+  type Settings,
 } from "./schemas.js";
 
 export interface DataRepo {
@@ -48,11 +56,21 @@ export interface DataRepo {
   /** Upsert by player: re-adding a player replaces their row (the coach correcting an email). */
   addRosterMembers(members: RosterMember[]): Promise<void>;
   removeRosterMember(player: string): Promise<void>;
+  /** The stored settings row, or undefined on a fresh site. Callers resolve defaults. */
+  getSettings(): Promise<Settings | undefined>;
+  putSettings(settings: Settings): Promise<void>;
+  getLogo(): Promise<LogoAsset | undefined>;
+  putLogo(logo: LogoAsset): Promise<void>;
+  deleteLogo(): Promise<void>;
 }
 
 const GAME_PK = "game";
 const CLAIM_PK = "claim";
 const ROSTER_PK = "member";
+const SETTINGS_PK = "settings";
+const SETTINGS_RK = "site";
+const ASSETS_CONTAINER = "assets";
+const LOGO_BLOB = "logo";
 
 /** Row key for a player: case-insensitive, with the four characters Table Storage forbids mapped. */
 function rosterKey(player: string): string {
@@ -62,7 +80,15 @@ function rosterKey(player: string): string {
     .replace(/[/\\#?]/g, "_");
 }
 
-let clients: { games: TableClient; claims: TableClient; roster: TableClient } | undefined;
+let clients:
+  | {
+      games: TableClient;
+      claims: TableClient;
+      roster: TableClient;
+      settings: TableClient;
+      assets: ContainerClient;
+    }
+  | undefined;
 
 async function ensureTable(client: TableClient): Promise<void> {
   try {
@@ -86,10 +112,19 @@ async function getClients() {
     roster: TableClient.fromConnectionString(STORAGE_CONNECTION_STRING, "roster", {
       allowInsecureConnection: true,
     }),
+    settings: TableClient.fromConnectionString(STORAGE_CONNECTION_STRING, "settings", {
+      allowInsecureConnection: true,
+    }),
+    assets:
+      BlobServiceClient.fromConnectionString(STORAGE_CONNECTION_STRING).getContainerClient(
+        ASSETS_CONTAINER,
+      ),
   };
   await ensureTable(created.games);
   await ensureTable(created.claims);
   await ensureTable(created.roster);
+  await ensureTable(created.settings);
+  await created.assets.createIfNotExists();
   clients = created;
   return clients;
 }
@@ -108,6 +143,7 @@ function pickColumns(
 const GAME_COLUMNS = Object.keys(gameSchema.shape);
 const CLAIM_COLUMNS = Object.keys(claimSchema.shape);
 const ROSTER_COLUMNS = Object.keys(rosterMemberSchema.shape);
+const SETTINGS_COLUMNS = Object.keys(settingsSchema.shape);
 
 function toGame(entity: Record<string, unknown>): Game {
   return gameSchema.parse(pickColumns(entity, GAME_COLUMNS));
@@ -135,6 +171,25 @@ function unpackEmails(entity: Record<string, unknown>): Record<string, unknown> 
   return { ...entity, emails };
 }
 
+/** The settings row: `templates` travels as `templates_json`, same idea as `emails_json`. */
+function packSettings(settings: Settings): Record<string, unknown> {
+  const { templates, ...rest } = settings;
+  return { ...rest, templates_json: JSON.stringify(templates) };
+}
+
+function toSettings(entity: Record<string, unknown>): Settings {
+  const raw = entity["templates_json"];
+  let templates: unknown = undefined;
+  if (typeof raw === "string") {
+    try {
+      templates = JSON.parse(raw);
+    } catch {
+      templates = raw;
+    }
+  }
+  return settingsSchema.parse(pickColumns({ ...entity, templates }, SETTINGS_COLUMNS));
+}
+
 function toClaim(entity: Record<string, unknown>): Claim {
   return claimSchema.parse(pickColumns(entity, CLAIM_COLUMNS));
 }
@@ -144,7 +199,12 @@ function toRosterMember(entity: Record<string, unknown>): RosterMember {
 }
 
 function isNotFound(error: unknown): boolean {
-  return error instanceof RestError && error.statusCode === 404;
+  // Tables and blobs raise RestErrors from different SDK copies; the status code is what matters.
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    (error as { statusCode?: unknown }).statusCode === 404
+  );
 }
 
 function unavailable(error: unknown): AppError {
@@ -269,6 +329,51 @@ const tableRepo: DataRepo = {
     } catch (error) {
       if (!isNotFound(error)) throw error;
     }
+  },
+  async getSettings() {
+    const { settings } = await getClients();
+    try {
+      return toSettings(await settings.getEntity(SETTINGS_PK, SETTINGS_RK));
+    } catch (error) {
+      if (isNotFound(error)) return undefined;
+      throw error;
+    }
+  },
+  async putSettings(value) {
+    const { settings } = await getClients();
+    await settings.upsertEntity(
+      { partitionKey: SETTINGS_PK, rowKey: SETTINGS_RK, ...packSettings(value) },
+      "Replace",
+    );
+  },
+  async getLogo() {
+    const { assets } = await getClients();
+    const blob = assets.getBlockBlobClient(LOGO_BLOB);
+    try {
+      const [properties, bytes] = await Promise.all([
+        blob.getProperties(),
+        blob.downloadToBuffer(),
+      ]);
+      return {
+        content_type: properties.contentType ?? "application/octet-stream",
+        bytes: new Uint8Array(bytes),
+        updated_at: properties.metadata?.["updated_at"] ?? "",
+      };
+    } catch (error) {
+      if (isNotFound(error)) return undefined;
+      throw error;
+    }
+  },
+  async putLogo(logo) {
+    const { assets } = await getClients();
+    await assets.getBlockBlobClient(LOGO_BLOB).uploadData(logo.bytes, {
+      blobHTTPHeaders: { blobContentType: logo.content_type },
+      metadata: { updated_at: logo.updated_at },
+    });
+  },
+  async deleteLogo() {
+    const { assets } = await getClients();
+    await assets.getBlockBlobClient(LOGO_BLOB).deleteIfExists();
   },
 };
 

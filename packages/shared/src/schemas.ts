@@ -82,9 +82,73 @@ export type PublicGame = z.infer<typeof publicGameSchema>;
 
 /** The schedule plus the player names to pick from. Names only: the emails never leave the server. */
 export const scheduleResponseSchema = z
-  .object({ team_name: z.string(), games: z.array(publicGameSchema), players: z.array(playerName) })
+  .object({
+    team_name: z.string(),
+    // Free text the coach writes ("no peanuts"); shown above the games, empty when unset.
+    allergies: z.string(),
+    // Versioned URL of the uploaded badge, or null to use the built-in one.
+    logo_url: z.string().nullable(),
+    games: z.array(publicGameSchema),
+    players: z.array(playerName),
+  })
   .strict();
 export type ScheduleResponse = z.infer<typeof scheduleResponseSchema>;
+
+// ---- Site settings: what the coach edits on the admin page and every page and email reads.
+
+/** One email's copy. Placeholders are `{{name}}`; see TEMPLATE_PLACEHOLDERS in templates.ts. */
+export const emailTemplateSchema = z
+  .object({
+    subject: z.string().trim().min(1).max(200),
+    text: z.string().min(1).max(4000),
+  })
+  .strict();
+export type EmailTemplate = z.infer<typeof emailTemplateSchema>;
+
+export const EMAIL_KINDS = [
+  "claim_confirmation",
+  "snack_reminder",
+  "team_reminder",
+  "coach_nudge",
+] as const;
+export type EmailKind = (typeof EMAIL_KINDS)[number];
+
+export const emailTemplatesSchema = z
+  .object({
+    claim_confirmation: emailTemplateSchema,
+    snack_reminder: emailTemplateSchema,
+    team_reminder: emailTemplateSchema,
+    coach_nudge: emailTemplateSchema,
+  })
+  .strict();
+export type EmailTemplates = z.infer<typeof emailTemplatesSchema>;
+
+/** What the coach can edit. */
+export const settingsInputSchema = z
+  .object({
+    team_name: z.string().trim().min(1).max(60),
+    // 300 characters: a sentence or two ("no peanuts or tree nuts"), not a policy document.
+    allergies: z.string().trim().max(300),
+    templates: emailTemplatesSchema,
+  })
+  .strict();
+export type SettingsInput = z.infer<typeof settingsInputSchema>;
+
+/** The effective settings: the input plus the state of the uploaded badge. */
+export const settingsSchema = settingsInputSchema
+  .extend({
+    // When the coach last uploaded a badge, or null for the built-in one. Doubles as the cache key.
+    logo_updated_at: z.string().nullable(),
+  })
+  .strict();
+export type Settings = z.infer<typeof settingsSchema>;
+
+/** An uploaded badge as stored: the bytes and the type the browser must be told. */
+export interface LogoAsset {
+  content_type: string;
+  bytes: Uint8Array;
+  updated_at: string;
+}
 
 /** The coach's view: games joined with their claim and the current parent emails for that player. */
 export const adminGameSchema = gameSchema

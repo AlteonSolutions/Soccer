@@ -99,6 +99,11 @@ licensed to use, replace that one file; nothing else references it by content.
 | `POST /api/coach/roster` | admin | `{ members: [{ player, emails: string[1..4], position? }] }` (≤100) → `201 { members }` |
 | `PUT /api/coach/roster/{player}` | admin | `{ player, emails }` → `200 RosterMember` (a rename moves the sign-ups) |
 | `DELETE /api/coach/roster/{player}` | admin | `204` |
+| `GET /api/coach/settings` | admin | `{ settings, default_templates, emails }` |
+| `PUT /api/coach/settings` | admin | `SettingsInput` (team name, allergy note, templates) → `200` same shape |
+| `POST /api/coach/logo` | admin | image bytes (≤2 MB, `image/*` content type) → `200 Settings` |
+| `DELETE /api/coach/logo` | admin | back to the built-in badge → `200 Settings` |
+| `GET /api/logo` | public | the uploaded badge, or 404 (the page then keeps `/logo.svg`) |
 
 Errors are `{ error: { code, message } }` with the codes in `packages/shared/src/errors.ts`.
 The admin **page** is gated by the SWA route rule `/admin/*`. The admin **API** is gated by
@@ -106,9 +111,21 @@ The admin **page** is gated by the SWA route rule `/admin/*`. The admin **API** 
 session on every request (a client-supplied value is replaced). An SWA role rule on `/api/coach/*`
 was tried first and made those routes 404 for everyone, admin included; it is deliberately absent.
 
+## Site settings
+
+The coach edits, on the admin page: the **team name** (the heading on the sign-up page and the
+`{{team}}` in every email), a **food allergies** note (shown above the games when set), the
+**team badge** (any image up to 2 MB; the header and tab icon on both pages), and the four
+**email templates**. `TEAM_NAME` in the environment is only the fallback for a site with no
+settings row yet. The sign-up page also states the player count, always the length of the team
+list, with a thank-you line.
+
 ## Data
 
-Three Table Storage tables. `roster`: partition `member`, row key = player name lower-cased (with
+Four Table Storage tables and one blob. `settings`: partition `settings`, row key `site`, one
+row: team_name, allergies, logo_updated_at, templates_json. The badge is the blob `assets/logo`
+(an image does not fit a 64 KB table property); `logo_updated_at` versions its public URL so a
+new upload is never served from cache. `roster`: partition `member`, row key = player name lower-cased (with
 the four characters Table Storage forbids in keys mapped to `_`), columns player, emails_json,
 added_at, position (the roster order; lists sort by it, then by name). Table Storage has no list column, so `emails` is a JSON string on disk and a `string[]`
 everywhere else; only `data.ts` knows. `games`: partition `game`, row key = game id (`YYYY-MM-DD-opponent-slug`).

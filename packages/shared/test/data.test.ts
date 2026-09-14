@@ -1,6 +1,7 @@
 import { connect } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { withData } from "../src/data.js";
+import { DEFAULT_TEMPLATES } from "../src/templates.js";
 import { claim, game } from "./fixtures.js";
 
 // Runs against Azurite's table endpoint when it is up (`pnpm run dev:storage`) and skips itself
@@ -104,4 +105,25 @@ describe("withData against Azurite", async () => {
       expect(await withData((repo) => repo.getRosterMember(odd))).toBeUndefined();
     },
   );
+
+  run("round-trips the settings row and the badge blob", async () => {
+    const settings = {
+      team_name: `Azurite FC ${suffix}`,
+      allergies: "No peanuts.",
+      templates: { ...DEFAULT_TEMPLATES, coach_nudge: { subject: "s", text: "t" } },
+      logo_updated_at: "2026-09-14T10:00:00.000Z",
+    };
+    await withData((repo) => repo.putSettings(settings));
+    expect(await withData((repo) => repo.getSettings())).toEqual(settings);
+
+    const logo = {
+      content_type: "image/png",
+      bytes: new Uint8Array([137, 80, 78, 71, 1, 2, 3]),
+      updated_at: settings.logo_updated_at,
+    };
+    await withData((repo) => repo.putLogo(logo));
+    expect(await withData((repo) => repo.getLogo())).toEqual(logo);
+    await withData((repo) => repo.deleteLogo());
+    expect(await withData((repo) => repo.getLogo())).toBeUndefined();
+  });
 });

@@ -4,6 +4,7 @@
  * not exist — nothing errors, the URL just 404s. Add the import in the same commit as the route.
  */
 import "./games.js";
+import "./logo.js";
 import "./claims.js";
 import "./admin.js";
 import "./jobs.js";

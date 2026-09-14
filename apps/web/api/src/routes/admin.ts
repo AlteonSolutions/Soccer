@@ -8,6 +8,8 @@ import {
   parseScheduleText,
   rosterInputSchema,
   rosterMemberUpdateSchema,
+  settingsInputSchema,
+  loadSettings,
   withData,
 } from "@soccer/shared";
 import { z } from "zod";
@@ -26,6 +28,7 @@ import { json, parseBody, parseParam, toErrorResponse } from "../lib/http.js";
 import { importGames, previewImport, previewRosterImport } from "../lib/import.js";
 import { extractPdfText } from "../lib/schedule-pdf.js";
 import { requireAdmin } from "../lib/principal.js";
+import { getSettings, putLogo, removeLogo, updateSettings } from "../lib/settings.js";
 
 // Routes are "coach/…", not "admin/…": Static Web Apps forwards /api/* to the Functions host with
 // the prefix stripped, and the host reserves /admin/* for its own management endpoints, so an
@@ -128,8 +131,14 @@ app.http("coach-schedule-parse", {
       requireAdmin(request.headers.get(PRINCIPAL_HEADER));
       const { TEAM_NAME } = loadConfig();
       const text = await extractPdfText(new Uint8Array(await request.arrayBuffer()));
-      const parsed = parseScheduleText(text, TEAM_NAME);
-      return json(200, await withData((repo) => previewImport(repo, parsed)));
+      return json(
+        200,
+        await withData(async (repo) => {
+          // The schedule PDF lists both teams per game; ours is the name in the settings.
+          const { team_name } = await loadSettings(repo, TEAM_NAME);
+          return previewImport(repo, parseScheduleText(text, team_name));
+        }),
+      );
     } catch (error) {
       return toErrorResponse(error, context);
     }
@@ -203,6 +212,48 @@ app.http("coach-roster-edit", {
       return json(200, {
         members: await withData((repo) => updateRosterMember(repo, player, input)),
       });
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+// ---- Site settings: team name, allergy note, email templates, and the badge.
+app.http("coach-settings", {
+  route: "coach/settings",
+  methods: ["GET", "PUT"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const { TEAM_NAME } = loadConfig();
+      if (request.method === "GET") {
+        return json(200, await withData((repo) => getSettings(repo, TEAM_NAME)));
+      }
+      const input = await parseBody(request, settingsInputSchema);
+      return json(200, await withData((repo) => updateSettings(repo, TEAM_NAME, input)));
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+// The badge: the browser sends the file's bytes with its own content type. DELETE goes back to
+// the built-in badge.
+app.http("coach-logo", {
+  route: "coach/logo",
+  methods: ["POST", "DELETE"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const { TEAM_NAME } = loadConfig();
+      if (request.method === "DELETE") {
+        return json(200, await withData((repo) => removeLogo(repo, TEAM_NAME)));
+      }
+      const bytes = new Uint8Array(await request.arrayBuffer());
+      const type = request.headers.get("content-type");
+      return json(200, await withData((repo) => putLogo(repo, TEAM_NAME, type, bytes, new Date())));
     } catch (error) {
       return toErrorResponse(error, context);
     }

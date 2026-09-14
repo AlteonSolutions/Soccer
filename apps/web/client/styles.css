@@ -110,9 +110,29 @@ a {
 
 main {
   max-width: 60rem;
-  margin: -1.5rem auto 0;
+  margin: 1.5rem auto 0;
   padding: 0 1rem 4rem;
   position: relative;
+}
+
+/* The note above the games on the public page. */
+.intro {
+  background: var(--paper);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.25rem;
+  margin: 0 0 1rem;
+  border-left: 4px solid var(--sky);
+}
+.intro p {
+  margin: 0;
+}
+.intro .allergies {
+  margin-top: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  border-radius: 10px;
+  background: #fff7e6;
+  color: #6b4b00;
 }
 
 .status {
@@ -156,7 +176,7 @@ main {
 .game:hover {
   transform: translateY(-1px);
 }
-/* Past games stay opaque (they overlap the header band) but recede: muted tile, muted text. */
+/* Past games recede: muted tile, muted text. */
 .game.past h2,
 .game.past .meta {
   color: var(--muted);
@@ -335,12 +355,6 @@ form.claim .confirm {
   border-radius: 8px;
   font-weight: 600;
   color: var(--navy);
-}
-form.claim .privacy {
-  grid-column: 1 / -1;
-  margin: 0;
-  font-size: 0.85rem;
-  color: var(--muted);
 }
 form.claim .actions {
   grid-column: 1 / -1;
@@ -612,4 +626,90 @@ footer {
   .roster-form {
     grid-template-columns: 1fr;
   }
+}
+
+/* Site settings and email templates on the admin page. */
+.settings-form {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.settings-form label,
+.template label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--navy);
+}
+.settings-form input,
+.settings-form textarea,
+.template input,
+.template textarea {
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+}
+.settings-form textarea,
+.template textarea {
+  resize: vertical;
+}
+.template textarea {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  min-height: 9rem;
+}
+.settings-form input:focus,
+.settings-form textarea:focus,
+.template input:focus,
+.template textarea:focus {
+  outline: none;
+  border-color: var(--sky-deep);
+  box-shadow: 0 0 0 3px rgba(108, 171, 221, 0.35);
+}
+.settings-form .actions,
+.templates-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.logo-row img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  flex: none;
+  border-radius: 12px;
+  background: var(--sky-tint);
+  padding: 4px;
+}
+.logo-row .import-form {
+  flex: 1 1 18rem;
+  margin: 0;
+}
+.template {
+  display: grid;
+  gap: 0.75rem;
+}
+.template .placeholders {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.template .placeholders code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--sky-tint);
+  color: var(--navy);
+  padding: 0.05rem 0.35rem;
+  border-radius: 6px;
 }

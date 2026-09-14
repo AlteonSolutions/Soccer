@@ -16,8 +16,8 @@ _Written to be read cold. Update it in the same commit as the change it describe
 - `infra/main.bicep` — every Azure resource, at the lowest tier. **Applied 2026-09-12** to `snaccer-rg`.
 - Specs: `docs/spec/snack-signup.md`, `docs/spec/reminder-emails.md`.
 
-**What is verified.** `pnpm run gate` passes: typecheck of every package, lint, format, 74 tests.
-The Table Storage repo round-trips against Azurite, roster included. Both Function Apps build to a
+**What is verified.** `pnpm run gate` passes: typecheck of every package, lint, format, 85 tests (88 with Azurite up).
+The Table Storage repo round-trips against Azurite, roster, settings and the badge blob included. Both Function Apps build to a
 single file. The public and admin pages have been driven in headless Chromium against the real
 client bundle and handler logic (in-memory storage) and screenshotted at desktop and phone width.
 

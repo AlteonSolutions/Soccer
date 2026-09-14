@@ -12,6 +12,7 @@ import {
   type Claim,
   type ClaimInput,
   type DataRepo,
+  type EmailTemplates,
   type PublicGame,
   type SendEmail,
 } from "@soccer/shared";
@@ -21,6 +22,8 @@ export interface ClaimContext {
   now: Date;
   teamName: string;
   siteUrl: string;
+  /** The coach's email copy, from the site settings. */
+  templates: EmailTemplates;
   sendEmail: SendEmail;
   log: (line: string) => void;
 }
@@ -71,7 +74,7 @@ export async function createClaim(
   await repo.createClaim(claim);
 
   let confirmationSent = false;
-  const copy = confirmationEmail(game, claim, ctx.teamName, ctx.siteUrl);
+  const copy = confirmationEmail(game, claim, ctx);
   for (const to of member.emails) {
     try {
       await ctx.sendEmail({ to, ...copy });

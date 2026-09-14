@@ -22,47 +22,6 @@
     <main>
       <p id="status" class="status">Loading…</p>
       <section class="card">
-        <h2>Import The Schedule</h2>
-        <p class="hint">
-          Upload the league's schedule PDF. The games are read from it and shown here first; nothing
-          changes until you click Import. Re-uploading a corrected PDF updates kickoff times in
-          place and keeps every sign-up.
-        </p>
-        <form id="import-form" class="import-form">
-          <input name="pdf" type="file" accept="application/pdf,.pdf" required />
-          <button type="submit" class="primary">Read Schedule</button>
-        </form>
-        <div id="import-preview" hidden>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Kickoff</th>
-                  <th>Opponent</th>
-                  <th>Import Would</th>
-                </tr>
-              </thead>
-              <tbody id="import-rows"></tbody>
-            </table>
-          </div>
-          <p id="import-skipped" class="hint" hidden></p>
-          <div class="actions">
-            <button id="import-confirm" type="button" class="primary">Import Games</button>
-            <button id="import-cancel" type="button" class="secondary">Cancel</button>
-          </div>
-        </div>
-      </section>
-      <section class="card">
-        <h2>Add A Game</h2>
-        <form id="add-game" class="admin-form">
-          <label>Date <input name="date" type="date" required /></label>
-          <label>Kickoff <input name="kickoff" type="time" required /></label>
-          <label>Opponent <input name="opponent" required maxlength="80" /></label>
-          <button type="submit" class="primary">Add Game</button>
-        </form>
-      </section>
-      <section class="card">
         <h2>Schedule</h2>
         <div class="table-wrap">
           <table>
@@ -78,50 +37,108 @@
           </table>
         </div>
       </section>
+      <details class="card tools">
+        <summary><h2>Import Or Add Games</h2></summary>
+        <div class="tool">
+          <h3>Import The Schedule</h3>
+          <p class="hint">
+            Upload the league's schedule PDF. The games are read from it and shown here first;
+            nothing changes until you click Import. Re-uploading a corrected PDF updates kickoff
+            times in place and keeps every sign-up.
+          </p>
+          <form id="import-form" class="import-form">
+            <input name="pdf" type="file" accept="application/pdf,.pdf" required />
+            <button type="submit" class="primary">Read Schedule</button>
+          </form>
+          <div id="import-preview" hidden>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Kickoff</th>
+                    <th>Opponent</th>
+                    <th>Import Would</th>
+                  </tr>
+                </thead>
+                <tbody id="import-rows"></tbody>
+              </table>
+            </div>
+            <p id="import-skipped" class="hint" hidden></p>
+            <div class="actions">
+              <button id="import-confirm" type="button" class="primary">Import Games</button>
+              <button id="import-cancel" type="button" class="secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="tool">
+          <h3>Add A Game</h3>
+          <form id="add-game" class="admin-form">
+            <label>Date <input name="date" type="date" required /></label>
+            <label>Kickoff <input name="kickoff" type="time" required /></label>
+            <label>Opponent <input name="opponent" required maxlength="80" /></label>
+            <button type="submit" class="primary">Add Game</button>
+          </form>
+        </div>
+      </details>
       <section class="card">
         <h2>Team List</h2>
         <p class="hint">
-          Parents sign up by picking their player from this list. The player's emails get the
-          confirmation, the Monday snack reminder and the Thursday game reminder. Upload the
-          league's roster PDF and the players and their parents' emails are read from it; a player
-          with no email in the PDF is listed for you to add by hand. Re-importing or re-adding a
-          player replaces their emails. Emails are never shown outside this page.
+          Parents sign up by picking their player from this list, in the roster's order. The
+          player's emails get the confirmation, the Monday snack reminder and the Thursday game
+          reminder. Emails are never shown outside this page.
         </p>
-        <form id="roster-import-form" class="import-form">
-          <input name="pdf" type="file" accept="application/pdf,.pdf" required />
-          <button type="submit" class="primary">Read Roster PDF</button>
-        </form>
-        <div id="roster-preview" hidden>
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Player</th>
-                  <th>Emails</th>
-                  <th>Import Would</th>
-                </tr>
-              </thead>
-              <tbody id="roster-preview-rows"></tbody>
-            </table>
-          </div>
-          <p id="roster-preview-notes" class="hint" hidden></p>
-          <div class="actions">
-            <button id="roster-import-confirm" type="button" class="primary">Import Players</button>
-            <button id="roster-import-cancel" type="button" class="secondary">Cancel</button>
-          </div>
-        </div>
-        <p class="hint">Or add players by hand:</p>
-        <form id="add-roster" class="roster-form">
-          <textarea
-            name="lines"
-            rows="4"
-            placeholder="Leo Rivera, rivera@example.com, rivera2@example.com&#10;Mia Chen, chen@example.com"
-            required
-          ></textarea>
-          <button type="submit" class="primary">Add To Team</button>
-        </form>
         <ul id="roster" class="roster"></ul>
       </section>
+      <details class="card tools">
+        <summary><h2>Import Or Add Players</h2></summary>
+        <div class="tool">
+          <h3>Import The Roster</h3>
+          <p class="hint">
+            Upload the league's roster PDF and the players and their parents' emails are read from
+            it, in the roster's order; a player with no email in the PDF is listed for you to add by
+            hand. Re-importing or re-adding a player replaces their emails.
+          </p>
+          <form id="roster-import-form" class="import-form">
+            <input name="pdf" type="file" accept="application/pdf,.pdf" required />
+            <button type="submit" class="primary">Read Roster PDF</button>
+          </form>
+          <div id="roster-preview" hidden>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Player</th>
+                    <th>Emails</th>
+                    <th>Import Would</th>
+                  </tr>
+                </thead>
+                <tbody id="roster-preview-rows"></tbody>
+              </table>
+            </div>
+            <p id="roster-preview-notes" class="hint" hidden></p>
+            <div class="actions">
+              <button id="roster-import-confirm" type="button" class="primary">
+                Import Players
+              </button>
+              <button id="roster-import-cancel" type="button" class="secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="tool">
+          <h3>Add Players By Hand</h3>
+          <p class="hint">One player per line: the name, then their parents' emails.</p>
+          <form id="add-roster" class="roster-form">
+            <textarea
+              name="lines"
+              rows="4"
+              placeholder="Leo Rivera, rivera@example.com, rivera2@example.com&#10;Mia Chen, chen@example.com"
+              required
+            ></textarea>
+            <button type="submit" class="primary">Add To Team</button>
+          </form>
+        </div>
+      </details>
     </main>
     <script type="module" src="/admin.js"></script>
   </body>

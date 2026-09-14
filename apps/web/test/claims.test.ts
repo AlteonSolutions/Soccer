@@ -18,6 +18,7 @@ function ctx(overrides: Partial<ClaimContext> = {}): ClaimContext {
     now: new Date("2026-09-10T15:00:00Z"),
     teamName: "Manchester City",
     siteUrl: "http://localhost:4280",
+    allergies: "",
     templates: DEFAULT_TEMPLATES,
     sendEmail,
     log: () => {},

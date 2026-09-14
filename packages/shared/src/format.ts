@@ -38,3 +38,17 @@ export function formatKickoff(kickoff: string): string {
   const hour12 = h % 12 === 0 ? 12 : h % 12;
   return `${hour12}:${String(min).padStart(2, "0")} ${suffix}`;
 }
+
+/** The coach's comma-separated allergy setting as a clean list; empty means none. */
+export function allergyList(allergies: string): string[] {
+  return allergies
+    .split(",")
+    .map((a) => a.trim())
+    .filter(Boolean);
+}
+
+/** "peanut", "peanut and tree nut", "peanut, tree nut and egg". */
+export function joinWithAnd(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
+}

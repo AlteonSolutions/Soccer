@@ -21,6 +21,7 @@ import { claim, game, member } from "./fixtures.js";
 const site = {
   teamName: "Manchester City",
   siteUrl: "https://example.org",
+  allergies: "peanut, tree nut",
   templates: DEFAULT_TEMPLATES,
 };
 
@@ -168,12 +169,24 @@ describe("emails", () => {
     expect(copy.text).toContain("Leo Rivera's family");
     expect(copy.text).toContain("Red Dragons");
     expect(copy.text).toContain("https://example.org");
+    expect(copy.text).toContain(
+      "A reminder that we have peanut and tree nut food allergies on the team",
+    );
+  });
+
+  it("snack reminder drops the allergy line, and its blank lines, when the team has none", () => {
+    const copy = reminderEmail(game(), claim(), { ...site, allergies: "" });
+    expect(copy.text).not.toContain("allerg");
+    expect(copy.text).not.toMatch(/\n{3,}/);
+    const one = reminderEmail(game(), claim(), { ...site, allergies: "egg" });
+    expect(one.text).toContain("we have egg food allergy on the team");
   });
 
   it("team reminder names the snack family, never their email, and points at the site when open", () => {
     const withSnacks = teamReminderEmail(game(), claim(), site);
     expect(withSnacks.subject).toBe("Manchester City: game this Saturday vs Red Dragons");
-    expect(withSnacks.text).toContain("Snacks: Leo Rivera's family");
+    expect(withSnacks.text).toContain("Snacks: Leo Rivera.");
+    expect(withSnacks.text).not.toContain("'s family");
     expect(withSnacks.text).not.toContain("sam@example.com");
     const open = teamReminderEmail(game(), undefined, site);
     expect(open.text).toContain("nobody has signed up yet");

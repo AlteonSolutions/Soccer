@@ -28,6 +28,7 @@ app.http("jobs-reminders", {
           today: localDateIso(now, config.TIMEZONE),
           teamName: settings.team_name,
           siteUrl: config.SITE_URL,
+          allergies: settings.allergies,
           templates: settings.templates,
           coachEmail: config.COACH_EMAIL,
           sendEmail,

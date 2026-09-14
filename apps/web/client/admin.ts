@@ -59,6 +59,17 @@ interface EmailPreview {
   based_on: { game: string; player: string };
 }
 
+const toast = document.getElementById("toast") as HTMLDivElement;
+let toastTimer: number | undefined;
+
+/** A short confirmation that slides in at the bottom and leaves on its own after 3 seconds. */
+function showToast(text: string): void {
+  toast.textContent = text;
+  toast.hidden = false;
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => (toast.hidden = true), 3000);
+}
+
 function setStatus(text: string, isError = false): void {
   status.textContent = text;
   status.className = isError ? "status error" : "status";
@@ -430,7 +441,8 @@ async function saveSettings(form: HTMLFormElement, done: string): Promise<void> 
     renderSettings(
       await request<SettingsResponse>("PUT", "/api/coach/settings", collectSettings()),
     );
-    setStatus(done);
+    setStatus("");
+    showToast(done);
   } catch (error) {
     report(error, "Could not save the settings.");
   } finally {
@@ -440,12 +452,12 @@ async function saveSettings(form: HTMLFormElement, done: string): Promise<void> 
 
 settingsForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  void saveSettings(settingsForm, "Settings saved. The sign-up page shows them on its next load.");
+  void saveSettings(settingsForm, "Settings saved – the sign-up page shows them on its next load.");
 });
 
 templatesForm.addEventListener("submit", (event) => {
   event.preventDefault();
-  void saveSettings(templatesForm, "Templates saved. The next emails use them.");
+  void saveSettings(templatesForm, "Templates saved – the next emails use them.");
 });
 
 logoForm.addEventListener("submit", async (event) => {
@@ -468,7 +480,8 @@ logoForm.addEventListener("submit", async (event) => {
     }
     logoForm.reset();
     renderBadge(payload as Settings);
-    setStatus("Badge updated.");
+    setStatus("");
+    showToast("Badge updated.");
   } catch (error) {
     report(error, "Could not upload that image.");
   } finally {
@@ -480,7 +493,8 @@ logoReset.addEventListener("click", async () => {
   logoReset.disabled = true;
   try {
     renderBadge(await request<Settings>("DELETE", "/api/coach/logo"));
-    setStatus("Back to the default badge.");
+    setStatus("");
+    showToast("Back to the default badge.");
   } catch (error) {
     report(error, "Could not remove the badge.");
     logoReset.disabled = false;

@@ -24,6 +24,7 @@ export const DEFAULT_TEMPLATES: EmailTemplates = {
     text:
       "Hi,\n\n" +
       "Quick reminder: {{player}}'s family is bringing snacks for the {{team}} game on {{game}}.\n\n" +
+      "{{allergies}}\n\n" +
       "Thank you!\n\nSchedule: {{site_url}}\n",
   },
   team_reminder: {
@@ -58,6 +59,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<EmailKind, Record<string, string>> = 
     date: "the game date",
     kickoff: "the kickoff time",
     opponent: "the opponent",
+    allergies: "a reminder of the team's food allergies, or nothing when there are none",
     site_url: "the address of this site",
   },
   team_reminder: {
@@ -66,7 +68,7 @@ export const TEMPLATE_PLACEHOLDERS: Record<EmailKind, Record<string, string>> = 
     date: "the game date",
     kickoff: "the kickoff time",
     opponent: "the opponent",
-    snacks: "who has snacks, or a note that the slot is open",
+    snacks: "the player whose family has snacks, or a note that the slot is open",
     site_url: "the address of this site",
   },
   coach_nudge: {
@@ -89,7 +91,11 @@ export interface RenderedEmail {
   text: string;
 }
 
-/** Fill `{{name}}` from `vars`. Placeholders not in `vars` stay as written. */
+/**
+ * Fill `{{name}}` from `vars`. Placeholders not in `vars` stay as written. A placeholder that
+ * fills in empty (no allergies this season) would leave a double blank line, so runs of blank
+ * lines in the body collapse to one.
+ */
 export function renderTemplate(
   template: EmailTemplate,
   vars: Record<string, string>,
@@ -98,5 +104,5 @@ export function renderTemplate(
     s.replace(/\{\{\s*([a-z_]+)\s*\}\}/g, (whole, name: string) =>
       Object.hasOwn(vars, name) ? (vars[name] as string) : whole,
     );
-  return { subject: fill(template.subject), text: fill(template.text) };
+  return { subject: fill(template.subject), text: fill(template.text).replace(/\n{3,}/g, "\n\n") };
 }

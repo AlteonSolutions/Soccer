@@ -22,6 +22,8 @@ export interface ClaimContext {
   now: Date;
   teamName: string;
   siteUrl: string;
+  /** The coach's allergy list, for the emails that mention it. */
+  allergies: string;
   /** The coach's email copy, from the site settings. */
   templates: EmailTemplates;
   sendEmail: SendEmail;

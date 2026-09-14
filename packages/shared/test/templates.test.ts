@@ -27,6 +27,7 @@ describe("renderTemplate", () => {
     const site = {
       teamName: "City",
       siteUrl: "https://example.org",
+      allergies: "",
       templates: {
         ...DEFAULT_TEMPLATES,
         claim_confirmation: {

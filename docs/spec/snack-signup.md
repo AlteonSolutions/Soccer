@@ -73,12 +73,12 @@ licensed to use, replace that one file; nothing else references it by content.
 
 - `/` — the schedule. Title Case headings. Each game: date, kickoff, opponent,
   and either "Snacks: _Player_" or a **Sign Up** button that opens the picker and confirm step.
-- `/admin/` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Two cards
-  are always open: the Schedule (games with sign-ups and emails; Edit, Release Slot, Remove Game)
-  and the Team List (one line per player in roster order: name, then up to four parent emails,
-  with Edit and Remove; re-adding a player replaces their emails). Beneath each is a card that is
-  collapsed by default: Import Or Add Games (PDF upload, preview, import; Add A Game) and Import
-  Or Add Players (roster PDF upload, preview, import; add by hand).
+- `/admin/` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Two cards:
+  the Schedule (games with sign-ups and emails; Edit, Release Slot, Remove Game) and the Team List
+  (one line per player in roster order: name, then up to four parent emails, with Edit and Remove;
+  re-adding a player replaces their emails). Under each card's heading, above its list, is a panel
+  that is collapsed by default: Import Or Add Games (PDF upload, preview, import; Add A Game) and
+  Import Or Add Players (roster PDF upload, preview, import; add by hand).
 - `/login`, `/logout` — redirects to the SWA auth endpoints.
 
 ## API

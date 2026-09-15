@@ -126,19 +126,14 @@ main {
   margin: 0;
 }
 .intro .headline {
-  font-size: 1.7rem;
+  font-size: 1.6rem;
   font-weight: 500;
-  margin-bottom: 0.9rem;
-}
-.intro .honest {
-  font-size: 1.3rem;
-  font-weight: 400;
-  margin-bottom: 0.7rem;
+  margin-bottom: 0.5rem;
 }
 .intro .ask {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-style: italic;
-  margin-bottom: 0.7rem;
+  margin-bottom: 1.4rem;
 }
 .intro .team {
   font-size: 1.15rem;

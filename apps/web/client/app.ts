@@ -139,7 +139,7 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
   return item;
 }
 
-/** The note above the games: three fixed lines in the HTML, then the team size and allergies. */
+/** The note above the games: two fixed lines in the HTML, then the team size and allergies. */
 function renderIntro(schedule: ScheduleResponse): void {
   introTeam.textContent = describeTeam(schedule.players.length, schedule.allergies);
   intro.hidden = false;

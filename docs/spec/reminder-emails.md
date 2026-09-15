@@ -1,7 +1,7 @@
 # Reminder emails
 
-_Status: built; not yet deployed. No email is sent anywhere until `EMAIL_LIVE=on` is set in Azure
-after the sender domain is verified._
+_Status: deployed. The sender domain `alteonapps.com` verified 2026-09-15; `EMAIL_LIVE=on` and
+the custom sender are set by the same infrastructure deploy (runbook steps 7–8)._
 
 ## The week
 

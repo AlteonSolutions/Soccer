@@ -45,8 +45,8 @@ Each item is a step in `docs/runbooks/first-deploy.md`.
       invited as `admin`; team list and a game entered. Two platform quirks found and fixed on the
       way: an SWA role rule on `/api/admin/*` and the Functions host's reserved `admin/` route.
 - [ ] Runbook 6: CNAME `snackduty` → the Static Web App (added at GoDaddy 2026-09-15); attach the hostname.
-- [ ] Runbook 7: four DNS records for `alteonapps.com` email (in place at GoDaddy 2026-09-15: SPF and both DKIM CNAMEs already existed from an earlier Azure email setup); verify; `linkCustomEmailDomain = true`.
-- [ ] Runbook 8: `emailLive = 'on'`; sign up once yourself and receive the confirmation.
+- [x] Runbook 7: four DNS records for `alteonapps.com` email (in place at GoDaddy 2026-09-15: SPF and both DKIM CNAMEs already existed from an earlier Azure email setup); all four Verified 2026-09-15; `linkCustomEmailDomain = true` in the parameters, redeploy pending.
+- [ ] Runbook 8: `emailLive = 'on'` is in the parameters with the same redeploy; sign up once yourself and receive the confirmation.
 
 **After that.** Decide whether parents need to release their own slot (would need a per-claim
 secret link in the confirmation email). Watch Application Insights the first Monday and Thursday.

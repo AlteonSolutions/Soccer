@@ -158,7 +158,7 @@ async function load(): Promise<void> {
     const schedule = await request<ScheduleResponse>("GET", "/api/games");
     heading.textContent = schedule.team_name;
     players = schedule.players;
-    document.title = `${schedule.team_name} Snack Schedule`;
+    document.title = `${schedule.team_name} Snack Duty`;
     renderBadge(schedule.logo_url);
     renderIntro(schedule);
     list.replaceChildren(...schedule.games.map((g) => renderGame(g, todayIso())));

@@ -28,6 +28,7 @@ import {
   type EmailTemplates,
   type Game,
   type LogoAsset,
+  type SendEmail,
   type Settings,
   type SettingsInput,
 } from "@soccer/shared";
@@ -194,4 +195,38 @@ export async function previewEmail(
     ...message,
     based_on: { game: `${formatDate(game.date)} vs ${game.opponent}`, player },
   };
+}
+
+export interface TestSendResult {
+  to: string;
+  subject: string;
+}
+
+/**
+ * Send one template, as typed, to the coach only: the preview's exact subject and body, with the
+ * To and BCC lines ignored so no parent can be emailed by a test. Nothing is marked reminded.
+ * Exists because the daily run only sends on a real Monday or Thursday, so there was no way to
+ * see a reminder in an inbox without waiting for one.
+ */
+export async function sendTestEmail(
+  repo: DataRepo,
+  input: EmailPreviewInput,
+  siteUrl: string,
+  teamName: string,
+  fallbackCoachEmail: string | undefined,
+  today: string,
+  sendEmail: SendEmail,
+): Promise<TestSendResult> {
+  const settings = await loadSettings(repo, teamName);
+  const to = settings.coach_email || fallbackCoachEmail;
+  if (!to) {
+    throw new AppError(
+      "VALIDATION",
+      "Enter your Coach Email in Site Settings and save it first; the test goes there.",
+      "Test send with no coach email in settings or COACH_EMAIL.",
+    );
+  }
+  const preview = await previewEmail(repo, input, siteUrl, teamName, fallbackCoachEmail, today);
+  await sendEmail({ to: [to], bcc: [], subject: preview.subject, text: preview.text });
+  return { to, subject: preview.subject };
 }

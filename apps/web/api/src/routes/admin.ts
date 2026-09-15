@@ -12,6 +12,7 @@ import {
   emailPreviewInputSchema,
   loadSettings,
   localDateIso,
+  sendEmail,
   withData,
 } from "@soccer/shared";
 import { z } from "zod";
@@ -30,7 +31,14 @@ import { json, parseBody, parseParam, toErrorResponse } from "../lib/http.js";
 import { importGames, previewImport, previewRosterImport } from "../lib/import.js";
 import { extractPdfText } from "../lib/schedule-pdf.js";
 import { requireAdmin } from "../lib/principal.js";
-import { getSettings, previewEmail, putLogo, removeLogo, updateSettings } from "../lib/settings.js";
+import {
+  getSettings,
+  previewEmail,
+  putLogo,
+  removeLogo,
+  sendTestEmail,
+  updateSettings,
+} from "../lib/settings.js";
 
 // Routes are "coach/…", not "admin/…": Static Web Apps forwards /api/* to the Functions host with
 // the prefix stripped, and the host reserves /admin/* for its own management endpoints, so an
@@ -277,6 +285,37 @@ app.http("coach-settings-preview", {
         200,
         await withData((repo) =>
           previewEmail(repo, input, config.SITE_URL, config.TEAM_NAME, config.COACH_EMAIL, today),
+        ),
+      );
+    } catch (error) {
+      return toErrorResponse(error, context);
+    }
+  },
+});
+
+// Send a template, as typed, to the coach only. Same body as the preview; nothing is marked.
+app.http("coach-settings-test", {
+  route: "coach/settings/test",
+  methods: ["POST"],
+  authLevel: "anonymous",
+  handler: async (request: HttpRequest, context: InvocationContext) => {
+    try {
+      requireAdmin(request.headers.get(PRINCIPAL_HEADER));
+      const config = loadConfig();
+      const input = await parseBody(request, emailPreviewInputSchema);
+      const today = localDateIso(new Date(), config.TIMEZONE);
+      return json(
+        200,
+        await withData((repo) =>
+          sendTestEmail(
+            repo,
+            input,
+            config.SITE_URL,
+            config.TEAM_NAME,
+            config.COACH_EMAIL,
+            today,
+            sendEmail,
+          ),
         ),
       );
     } catch (error) {

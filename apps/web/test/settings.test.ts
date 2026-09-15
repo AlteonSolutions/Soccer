@@ -1,4 +1,11 @@
-import { createMemoryRepo, DEFAULT_TEMPLATES } from "@soccer/shared";
+import {
+  clearCapturedEmails,
+  createMemoryRepo,
+  DEFAULT_TEMPLATES,
+  defaultSettings,
+  readCapturedEmails,
+  sendEmail,
+} from "@soccer/shared";
 import { describe, expect, it } from "vitest";
 import {
   getSettings,
@@ -6,6 +13,7 @@ import {
   previewEmail,
   putLogo,
   removeLogo,
+  sendTestEmail,
   updateSettings,
 } from "../api/src/lib/settings.js";
 import { claim, game, member } from "../../../packages/shared/test/fixtures.js";
@@ -139,5 +147,70 @@ describe("previewEmail", () => {
     expect(empty.subject).toBe("1");
     expect(empty.text).toContain("Red Dragons");
     expect(empty.based_on.player).toBe("Leo Rivera");
+  });
+});
+
+describe("sendTestEmail", () => {
+  const input = {
+    team_name: "Snack City",
+    kind: "team_reminder" as const,
+    template: {
+      ...DEFAULT_TEMPLATES.team_reminder,
+      to: "{{coach}}",
+      bcc: "{{team_parents}}",
+    },
+  };
+
+  it("sends the preview to the coach only, ignoring To and BCC, and marks nothing", async () => {
+    clearCapturedEmails();
+    const repo = createMemoryRepo({
+      games: [game()],
+      claims: [claim()],
+      roster: [member({ emails: ["sam@example.com"] })],
+      settings: { ...defaultSettings("Our Team"), coach_email: "coach@example.com" },
+    });
+    const result = await sendTestEmail(
+      repo,
+      input,
+      "https://example.org",
+      "Our Team",
+      undefined,
+      "2026-09-14",
+      sendEmail,
+    );
+    expect(result.to).toBe("coach@example.com");
+    const sent = readCapturedEmails();
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.to).toEqual(["coach@example.com"]);
+    expect(sent[0]?.bcc).toEqual([]);
+    expect(sent[0]?.text).toContain("Snacks: Leo Rivera.");
+    expect((await repo.getGame(game().id))?.team_reminded_at).toBeNull();
+  });
+
+  it("falls back to COACH_EMAIL, and refuses when there is no coach address at all", async () => {
+    clearCapturedEmails();
+    const repo = createMemoryRepo({ games: [game()], roster: [member()] });
+    const result = await sendTestEmail(
+      repo,
+      input,
+      "https://example.org",
+      "Our Team",
+      "fallback@example.com",
+      "2026-09-14",
+      sendEmail,
+    );
+    expect(result.to).toBe("fallback@example.com");
+    await expect(
+      sendTestEmail(
+        repo,
+        input,
+        "https://example.org",
+        "Our Team",
+        undefined,
+        "2026-09-14",
+        sendEmail,
+      ),
+    ).rejects.toMatchObject({ code: "VALIDATION" });
+    expect(readCapturedEmails()).toHaveLength(1);
   });
 });

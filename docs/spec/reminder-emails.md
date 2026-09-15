@@ -42,7 +42,10 @@ text as written, so a typo is visible rather than silent. The defaults live in
 `packages/shared/src/templates.ts`; "Reset To Default" restores them. "Preview" renders the
 template as typed through the same builders that send the real emails, filled from the next game
 on the schedule and the family signed up for it (or the first player on the team list, or a
-sample game when the schedule is empty), so the coach sees the exact email before saving. The team name in every
+sample game when the schedule is empty), so the coach sees the exact email before saving. "Send Me
+A Test" delivers that same rendering to the coach email only, with the To and BCC lines ignored
+and nothing marked reminded: the daily run sends only on a real Monday or Thursday, so this is
+the way to see a reminder in an inbox without waiting for one. The team name in every
 email is the one from the settings, not `TEAM_NAME`.
 
 ## The team list

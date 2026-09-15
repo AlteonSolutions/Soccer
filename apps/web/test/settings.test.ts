@@ -48,9 +48,10 @@ describe("settings", () => {
   it("stores an image as the badge, stamps the version, and removes it again", async () => {
     const repo = createMemoryRepo();
     const bytes = new Uint8Array([1, 2, 3]);
-    const settings = await putLogo(repo, "Our Team", "image/png", bytes, now);
+    const settings = await putLogo(repo, "Our Team", "logo", "image/png", bytes, now);
     expect(settings.logo_updated_at).toBe("2026-09-14T10:00:00.000Z");
-    expect(await repo.getLogo()).toEqual({
+    expect(settings.wordmark_updated_at).toBeNull();
+    expect(await repo.getLogo("logo")).toEqual({
       content_type: "image/png",
       bytes,
       updated_at: "2026-09-14T10:00:00.000Z",
@@ -63,24 +64,45 @@ describe("settings", () => {
       templates: DEFAULT_TEMPLATES,
     });
     expect(edited.settings.logo_updated_at).toBe("2026-09-14T10:00:00.000Z");
-    const removed = await removeLogo(repo, "Our Team");
+    const removed = await removeLogo(repo, "Our Team", "logo");
     expect(removed.logo_updated_at).toBeNull();
     expect(removed.team_name).toBe("Edited");
-    expect(await repo.getLogo()).toBeUndefined();
+    expect(await repo.getLogo("logo")).toBeUndefined();
+  });
+
+  it("keeps the Snack Duty logo in its own slot, separate from the badge", async () => {
+    const repo = createMemoryRepo();
+    const later = new Date("2026-09-15T10:00:00Z");
+    await putLogo(repo, "Our Team", "logo", "image/png", new Uint8Array([1]), now);
+    const settings = await putLogo(
+      repo,
+      "Our Team",
+      "wordmark",
+      "image/png",
+      new Uint8Array([2]),
+      later,
+    );
+    expect(settings.logo_updated_at).toBe("2026-09-14T10:00:00.000Z");
+    expect(settings.wordmark_updated_at).toBe("2026-09-15T10:00:00.000Z");
+    expect((await repo.getLogo("wordmark"))?.bytes).toEqual(new Uint8Array([2]));
+    const removed = await removeLogo(repo, "Our Team", "wordmark");
+    expect(removed.wordmark_updated_at).toBeNull();
+    expect(removed.logo_updated_at).toBe("2026-09-14T10:00:00.000Z");
+    expect(await repo.getLogo("logo")).toBeDefined();
   });
 
   it("rejects a non-image, an empty file, and an oversized one", async () => {
     const repo = createMemoryRepo();
     await expect(
-      putLogo(repo, "Our Team", "application/pdf", new Uint8Array([1]), now),
+      putLogo(repo, "Our Team", "logo", "application/pdf", new Uint8Array([1]), now),
     ).rejects.toMatchObject({ code: "VALIDATION" });
     await expect(
-      putLogo(repo, "Our Team", "image/png", new Uint8Array(), now),
+      putLogo(repo, "Our Team", "logo", "image/png", new Uint8Array(), now),
     ).rejects.toMatchObject({ code: "VALIDATION" });
     await expect(
-      putLogo(repo, "Our Team", "image/png", new Uint8Array(MAX_LOGO_BYTES + 1), now),
+      putLogo(repo, "Our Team", "logo", "image/png", new Uint8Array(MAX_LOGO_BYTES + 1), now),
     ).rejects.toMatchObject({ code: "VALIDATION" });
-    expect(await repo.getLogo()).toBeUndefined();
+    expect(await repo.getLogo("logo")).toBeUndefined();
   });
 });
 

@@ -105,6 +105,7 @@ describe("getSchedule", () => {
     expect(schedule.team_name).toBe("Manchester City");
     expect(schedule.allergies).toBe("");
     expect(schedule.logo_url).toBeNull();
+    expect(schedule.wordmark_url).toBeNull();
     expect(schedule.games[0]?.snack_by).toBe("Leo Rivera");
     expect(schedule.players).toEqual(["Leo Rivera", "Mia Chen"]);
     expect(JSON.stringify(schedule)).not.toMatch(/@/);
@@ -117,11 +118,13 @@ describe("getSchedule", () => {
         team_name: "Snack City",
         allergies: "No peanuts, please.",
         logo_updated_at: "2026-09-14T10:00:00.000Z",
+        wordmark_updated_at: "2026-09-15T10:00:00.000Z",
       },
     });
     const schedule = await getSchedule(repo, "Manchester City");
     expect(schedule.team_name).toBe("Snack City");
     expect(schedule.allergies).toBe("No peanuts, please.");
-    expect(schedule.logo_url).toBe("/api/logo?v=2026-09-14T10%3A00%3A00.000Z");
+    expect(schedule.logo_url).toBe("/api/assets/logo?v=2026-09-14T10%3A00%3A00.000Z");
+    expect(schedule.wordmark_url).toBe("/api/assets/wordmark?v=2026-09-15T10%3A00%3A00.000Z");
   });
 });

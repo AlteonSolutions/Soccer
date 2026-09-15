@@ -5,7 +5,7 @@
  * fallback), no allergy note, the default email templates, no uploaded badge.
  */
 import type { DataRepo } from "./data.js";
-import { settingsSchema, type Settings } from "./schemas.js";
+import { settingsSchema, type AssetKind, type Settings } from "./schemas.js";
 import { DEFAULT_TEMPLATES } from "./templates.js";
 
 export function defaultSettings(teamName: string): Settings {
@@ -15,6 +15,7 @@ export function defaultSettings(teamName: string): Settings {
     allergies: "",
     templates: DEFAULT_TEMPLATES,
     logo_updated_at: null,
+    wordmark_updated_at: null,
   };
 }
 
@@ -41,9 +42,8 @@ export async function loadSettings(repo: DataRepo, teamName: string): Promise<Se
   return resolveSettings(await repo.getSettings(), teamName);
 }
 
-/** The badge URL the pages should use: versioned so a new upload is never served from cache. */
-export function logoUrlFor(settings: Pick<Settings, "logo_updated_at">): string | null {
-  return settings.logo_updated_at
-    ? `/api/logo?v=${encodeURIComponent(settings.logo_updated_at)}`
-    : null;
+/** The URL the pages should use for an uploaded image: versioned so a new upload is never cached. */
+export function assetUrlFor(settings: Settings, kind: AssetKind): string | null {
+  const version = kind === "logo" ? settings.logo_updated_at : settings.wordmark_updated_at;
+  return version ? `/api/assets/${kind}?v=${encodeURIComponent(version)}` : null;
 }

@@ -13,6 +13,8 @@ const heading = document.getElementById("team-name") as HTMLHeadingElement;
 const intro = document.getElementById("intro") as HTMLElement;
 const introTeam = document.getElementById("intro-team") as HTMLParagraphElement;
 const badge = document.querySelector(".hero .badge") as HTMLImageElement;
+const wordmark = document.getElementById("wordmark") as HTMLImageElement;
+const eyebrow = document.querySelector(".hero .eyebrow") as HTMLParagraphElement;
 const favicon = document.querySelector("link[rel=icon]") as HTMLLinkElement;
 
 function setStatus(text: string, isError = false): void {
@@ -143,10 +145,21 @@ function renderIntro(schedule: ScheduleResponse): void {
   intro.hidden = false;
 }
 
-function renderBadge(logoUrl: string | null): void {
-  const src = logoUrl ?? "/logo.svg";
+/** The badge (with the built-in fallback) and, when uploaded, the Snack Duty logo on the right. */
+function renderBranding(schedule: ScheduleResponse): void {
+  const src = schedule.logo_url ?? "/logo.svg";
   if (badge.getAttribute("src") !== src) badge.src = src;
   favicon.href = src;
+  if (schedule.wordmark_url) {
+    if (wordmark.getAttribute("src") !== schedule.wordmark_url)
+      wordmark.src = schedule.wordmark_url;
+    wordmark.hidden = false;
+    // The logo says "Snack Duty"; the small text above the team name would say it twice.
+    eyebrow.hidden = true;
+  } else {
+    wordmark.hidden = true;
+    eyebrow.hidden = false;
+  }
 }
 
 async function load(): Promise<void> {
@@ -155,7 +168,7 @@ async function load(): Promise<void> {
     heading.textContent = schedule.team_name;
     players = schedule.players;
     document.title = `${schedule.team_name} Snack Duty`;
-    renderBadge(schedule.logo_url);
+    renderBranding(schedule);
     renderIntro(schedule);
     list.replaceChildren(...schedule.games.map((g) => renderGame(g, todayIso())));
     if (schedule.games.length === 0) setStatus("No games on the schedule yet.");

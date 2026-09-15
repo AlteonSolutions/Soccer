@@ -39,6 +39,6 @@ export {
   type Recipients,
   type RenderedEmail,
 } from "./templates.js";
-export { defaultSettings, loadSettings, logoUrlFor, resolveSettings } from "./settings.js";
+export { assetUrlFor, defaultSettings, loadSettings, resolveSettings } from "./settings.js";
 export { parseScheduleText, type ParsedSchedule } from "./schedule-import.js";
 export { parseRosterText, type ParsedRoster } from "./roster-import.js";

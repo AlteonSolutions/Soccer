@@ -6,13 +6,13 @@
  */
 import { AppError } from "./errors.js";
 import type { DataRepo, StoredSettings } from "./data.js";
-import type { Claim, Game, LogoAsset, RosterMember, Settings } from "./schemas.js";
+import type { AssetKind, Claim, Game, LogoAsset, RosterMember, Settings } from "./schemas.js";
 
 export function createMemoryRepo(
   seed: { games?: Game[]; claims?: Claim[]; roster?: RosterMember[]; settings?: Settings } = {},
 ): DataRepo {
   let settings: StoredSettings | undefined = seed.settings;
-  let logo: LogoAsset | undefined;
+  const logos = new Map<AssetKind, LogoAsset>();
   const games = new Map((seed.games ?? []).map((g) => [g.id, g]));
   const claims = new Map((seed.claims ?? []).map((c) => [c.game_id, c]));
   const key = (player: string) => player.trim().toLowerCase();
@@ -79,14 +79,14 @@ export function createMemoryRepo(
     async putSettings(value) {
       settings = value;
     },
-    async getLogo() {
-      return logo;
+    async getLogo(kind) {
+      return logos.get(kind);
     },
-    async putLogo(value) {
-      logo = value;
+    async putLogo(kind, value) {
+      logos.set(kind, value);
     },
-    async deleteLogo() {
-      logo = undefined;
+    async deleteLogo(kind) {
+      logos.delete(kind);
     },
   };
 }

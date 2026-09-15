@@ -4,8 +4,8 @@
  * from the coach's settings so an edit on the admin page shows on the next page load.
  */
 import {
+  assetUrlFor,
   loadSettings,
-  logoUrlFor,
   toPlayerNames,
   toPublicSchedule,
   type DataRepo,
@@ -22,7 +22,8 @@ export async function getSchedule(repo: DataRepo, teamName: string): Promise<Sch
   return {
     team_name: settings.team_name,
     allergies: settings.allergies,
-    logo_url: logoUrlFor(settings),
+    logo_url: assetUrlFor(settings, "logo"),
+    wordmark_url: assetUrlFor(settings, "wordmark"),
     games: toPublicSchedule(games, claims),
     players: toPlayerNames(roster),
   };

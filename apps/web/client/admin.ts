@@ -37,6 +37,9 @@ const settingsForm = document.getElementById("settings-form") as HTMLFormElement
 const logoForm = document.getElementById("logo-form") as HTMLFormElement;
 const logoReset = document.getElementById("logo-reset") as HTMLButtonElement;
 const logoPreview = document.getElementById("logo-preview") as HTMLImageElement;
+const wordmarkForm = document.getElementById("wordmark-form") as HTMLFormElement;
+const wordmarkReset = document.getElementById("wordmark-reset") as HTMLButtonElement;
+const wordmarkPreview = document.getElementById("wordmark-preview") as HTMLImageElement;
 const templatesForm = document.getElementById("templates-form") as HTMLFormElement;
 const templatesBox = document.getElementById("templates") as HTMLDivElement;
 const badge = document.querySelector(".hero .badge") as HTMLImageElement;
@@ -444,12 +447,20 @@ function renderTemplateEditors(): void {
 
 function renderBadge(settings: Settings): void {
   const src = settings.logo_updated_at
-    ? `/api/logo?v=${encodeURIComponent(settings.logo_updated_at)}`
+    ? `/api/assets/logo?v=${encodeURIComponent(settings.logo_updated_at)}`
     : "/logo.svg";
   if (badge.getAttribute("src") !== src) badge.src = src;
   logoPreview.src = src;
   favicon.href = src;
   logoReset.disabled = !settings.logo_updated_at;
+  const wordmarkSrc = settings.wordmark_updated_at
+    ? `/api/assets/wordmark?v=${encodeURIComponent(settings.wordmark_updated_at)}`
+    : "";
+  wordmarkPreview.hidden = !wordmarkSrc;
+  if (wordmarkSrc && wordmarkPreview.getAttribute("src") !== wordmarkSrc) {
+    wordmarkPreview.src = wordmarkSrc;
+  }
+  wordmarkReset.disabled = !settings.wordmark_updated_at;
 }
 
 function renderSettings({ settings, default_templates, emails }: SettingsResponse): void {
@@ -511,45 +522,64 @@ templatesForm.addEventListener("submit", (event) => {
   void saveSettings(templatesForm, "Templates saved – the next emails use them.");
 });
 
-logoForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const input = logoForm.querySelector("input[name=image]") as HTMLInputElement;
-  const file = input.files?.[0];
-  if (!file) return;
-  const submit = logoForm.querySelector("button[type=submit]") as HTMLButtonElement;
-  submit.disabled = true;
-  try {
-    const response = await fetch("/api/coach/logo", {
-      method: "POST",
-      headers: { "content-type": file.type || "application/octet-stream" },
-      body: file,
-    });
-    const payload: unknown = await response.json().catch(() => undefined);
-    if (!response.ok) {
-      const error = (payload as { error?: { message?: string } } | undefined)?.error;
-      throw new RequestError("UPLOAD", error?.message ?? "Could not upload that image.");
+/** Upload and remove for one image slot; the badge and the Snack Duty logo share this. */
+function wireImageSlot(
+  form: HTMLFormElement,
+  reset: HTMLButtonElement,
+  kind: "logo" | "wordmark",
+  labels: { uploaded: string; removed: string; noun: string },
+): void {
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const input = form.querySelector("input[name=image]") as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    const submit = form.querySelector("button[type=submit]") as HTMLButtonElement;
+    submit.disabled = true;
+    try {
+      const response = await fetch(`/api/coach/assets/${kind}`, {
+        method: "POST",
+        headers: { "content-type": file.type || "application/octet-stream" },
+        body: file,
+      });
+      const payload: unknown = await response.json().catch(() => undefined);
+      if (!response.ok) {
+        const error = (payload as { error?: { message?: string } } | undefined)?.error;
+        throw new RequestError("UPLOAD", error?.message ?? "Could not upload that image.");
+      }
+      form.reset();
+      renderBadge(payload as Settings);
+      setStatus("");
+      showToast(labels.uploaded);
+    } catch (error) {
+      report(error, "Could not upload that image.");
+    } finally {
+      submit.disabled = false;
     }
-    logoForm.reset();
-    renderBadge(payload as Settings);
-    setStatus("");
-    showToast("Badge updated.");
-  } catch (error) {
-    report(error, "Could not upload that image.");
-  } finally {
-    submit.disabled = false;
-  }
-});
+  });
 
-logoReset.addEventListener("click", async () => {
-  logoReset.disabled = true;
-  try {
-    renderBadge(await request<Settings>("DELETE", "/api/coach/logo"));
-    setStatus("");
-    showToast("Back to the default badge.");
-  } catch (error) {
-    report(error, "Could not remove the badge.");
-    logoReset.disabled = false;
-  }
+  reset.addEventListener("click", async () => {
+    reset.disabled = true;
+    try {
+      renderBadge(await request<Settings>("DELETE", `/api/coach/assets/${kind}`));
+      setStatus("");
+      showToast(labels.removed);
+    } catch (error) {
+      report(error, `Could not remove the ${labels.noun}.`);
+      reset.disabled = false;
+    }
+  });
+}
+
+wireImageSlot(logoForm, logoReset, "logo", {
+  uploaded: "Badge updated.",
+  removed: "Back to the default badge.",
+  noun: "badge",
+});
+wireImageSlot(wordmarkForm, wordmarkReset, "wordmark", {
+  uploaded: "Snack Duty logo updated – it shows on the sign-up page's header.",
+  removed: "Snack Duty logo removed.",
+  noun: "logo",
 });
 
 async function load(): Promise<void> {

@@ -1,8 +1,9 @@
 /*
  * The coach's site settings and the uploaded badge. Settings are one row; the badge is one blob.
  * Reading always resolves defaults (see @soccer/shared settings.ts), so a fresh site and a site
- * from before a field existed both behave. Uploading a badge stamps `logo_updated_at` on the
- * settings row, which is what versions the public URL so browsers never show a stale badge.
+ * from before a field existed both behave. Uploading an image (the team badge, or the Snack Duty
+ * logo for the header) stamps `<kind>_updated_at` on the settings row, which is what versions the
+ * public URL so browsers never show a stale image.
  */
 import {
   AppError,
@@ -20,6 +21,7 @@ import {
   teamReminderEmail,
   TEMPLATE_PLACEHOLDERS,
   unclaimedNudgeEmail,
+  type AssetKind,
   type Claim,
   type DataRepo,
   type EmailKind,
@@ -33,8 +35,8 @@ import {
   type SettingsInput,
 } from "@soccer/shared";
 
-// 2 MB: the badge renders at 84 px; a photo-sized file is a mistake, and the API answers every
-// page load for it.
+// 2 MB: the badge renders at 84 px and the header logo at 140 px; a photo-sized file is a
+// mistake, and the API answers every page load for it.
 export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
 
 const IMAGE_TYPE = /^image\/[a-z0-9.+-]+$/i;
@@ -80,9 +82,16 @@ export async function updateSettings(
   return respond(next);
 }
 
+function stamped(settings: Settings, kind: AssetKind, at: string | null): Settings {
+  return kind === "logo"
+    ? { ...settings, logo_updated_at: at }
+    : { ...settings, wordmark_updated_at: at };
+}
+
 export async function putLogo(
   repo: DataRepo,
   teamName: string,
+  kind: AssetKind,
   contentType: string | null,
   bytes: Uint8Array,
   now: Date,
@@ -101,28 +110,30 @@ export async function putLogo(
   if (bytes.byteLength > MAX_LOGO_BYTES) {
     throw new AppError(
       "VALIDATION",
-      "That image is too large. Anything under 2 MB is plenty for a badge.",
+      "That image is too large. Anything under 2 MB is plenty.",
       "Logo upload over MAX_LOGO_BYTES.",
     );
   }
   const updated_at = now.toISOString();
-  await repo.putLogo({ content_type: type, bytes, updated_at });
-  const current = await loadSettings(repo, teamName);
-  const next: Settings = { ...current, logo_updated_at: updated_at };
+  await repo.putLogo(kind, { content_type: type, bytes, updated_at });
+  const next = stamped(await loadSettings(repo, teamName), kind, updated_at);
   await repo.putSettings(next);
   return next;
 }
 
-export async function removeLogo(repo: DataRepo, teamName: string): Promise<Settings> {
-  await repo.deleteLogo();
-  const current = await loadSettings(repo, teamName);
-  const next: Settings = { ...current, logo_updated_at: null };
+export async function removeLogo(
+  repo: DataRepo,
+  teamName: string,
+  kind: AssetKind,
+): Promise<Settings> {
+  await repo.deleteLogo(kind);
+  const next = stamped(await loadSettings(repo, teamName), kind, null);
   await repo.putSettings(next);
   return next;
 }
 
-export async function getLogo(repo: DataRepo): Promise<LogoAsset | undefined> {
-  return repo.getLogo();
+export async function getLogo(repo: DataRepo, kind: AssetKind): Promise<LogoAsset | undefined> {
+  return repo.getLogo(kind);
 }
 
 // A stand-in for a site with no games yet, so the preview always has something to fill in.

@@ -1,7 +1,7 @@
 # Reminder emails
 
-_Status: deployed. The sender domain `alteonapps.com` verified 2026-09-15; `EMAIL_LIVE=on` and
-the custom sender are set by the same infrastructure deploy (runbook steps 7–8)._
+_Status: live since 2026-09-15. Sender `snacks@alteonapps.com`; the coach received the first real
+confirmation that day._
 
 ## The week
 

@@ -117,6 +117,23 @@ az deployment group create --resource-group snaccer-rg --template-file infra/mai
 
 The `emailFrom` output becomes `snacks@alteonapps.com`. Commit the parameter change.
 
+### Doing 6–8 in the portal instead of Cloud Shell
+
+Cloud Shell forgets its files when it is reset, and every change in steps 6–8 is a few clicks:
+
+- **Hostname** (step 6): the Static Web App → **Custom domains** → **Add** → *Custom domain on
+  other DNS* → the hostname → CNAME validation → **Add**. Ready in a few minutes; the certificate
+  follows a few minutes later. A tab that loaded the site before the certificate existed keeps
+  showing "Not secure" until it is closed; a fresh tab is the check.
+- **Link the domain** (step 7): `snaccer-comms` → **Email** → **Domains** → **Connect domain** →
+  `alteonapps.com`. Confirm `snacks@alteonapps.com` exists under `snaccer-email` → the domain →
+  **MailFrom addresses** (the first deploy created it).
+- **App settings** (step 8): the Static Web App → **Environment variables** → `EMAIL_FROM`,
+  `EMAIL_LIVE`, `SITE_URL` → **Save**.
+
+Afterwards, update `infra/main.bicepparam` to the same values so the file and Azure agree; a later
+redeploy is then a no-op for these.
+
 ## 8. Turn email on and test
 
 ```

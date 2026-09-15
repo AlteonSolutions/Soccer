@@ -15,8 +15,8 @@ describe("format", () => {
   });
 
   it("describes the snack slot by name only", () => {
-    expect(describeSnack({ snack_by: "Leo Rivera" })).toBe("Snacks: Leo Rivera");
-    expect(describeSnack({ snack_by: null })).toBe("Snacks: nobody yet");
+    expect(describeSnack({ snack_by: "Leo Rivera" })).toBe("Snack Duty: Leo Rivera");
+    expect(describeSnack({ snack_by: null })).toBe("Snack Duty: nobody yet");
   });
 
   it("parses 'Player, email, email' lines, keeping commas in names and every address", () => {

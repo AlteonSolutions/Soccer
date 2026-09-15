@@ -5,9 +5,9 @@
 import { allergyList, joinWithAnd } from "@soccer/shared/format";
 import type { PublicGame } from "@soccer/shared/schemas";
 
-/** "Snacks: The Nguyens" – a label, not a sentence, so plural family names never read wrong. */
+/** "Snack Duty: Leo Rivera" – a label, not a sentence, so plural family names never read wrong. */
 export function describeSnack(game: Pick<PublicGame, "snack_by">): string {
-  return game.snack_by ? `Snacks: ${game.snack_by}` : "Snacks: nobody yet";
+  return game.snack_by ? `Snack Duty: ${game.snack_by}` : "Snack Duty: nobody yet";
 }
 
 /**

@@ -72,7 +72,7 @@ crest is Manchester City FC's trademark and is not copied here. To use an offici
 licensed to use, replace that one file; nothing else references it by content.
 
 - `/` — the schedule, titled "Snack Duty" over the team name. Each game: date, kickoff, opponent,
-  and either "Snacks: _Player_" or a **Sign Up** button that opens the picker and confirm step.
+  and either "Snack Duty: _Player_" or a **Sign Up** button that opens the picker and confirm step.
 - `/admin/` — the coach's page, behind Static Web Apps sign-in with the `admin` role. Two cards:
   the Schedule (games with sign-ups and emails; a three-dots menu per row with Edit, Release Slot,
   Remove Game) and the Team List

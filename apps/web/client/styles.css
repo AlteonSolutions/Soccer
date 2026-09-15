@@ -72,19 +72,6 @@ a {
   flex: none;
   filter: drop-shadow(0 6px 14px rgba(18, 32, 63, 0.35));
 }
-.hero .wordmark {
-  /* 140 px: tall enough to read the lettering, short enough to keep the band one row. */
-  height: 140px;
-  width: auto;
-  max-width: 40%;
-  object-fit: contain;
-  margin-left: auto;
-  flex: none;
-  filter: drop-shadow(0 6px 14px rgba(18, 32, 63, 0.35));
-}
-.hero .wordmark[hidden] {
-  display: none;
-}
 .hero .eyebrow {
   margin: 0;
   font-size: 0.8rem;
@@ -157,6 +144,22 @@ main {
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--navy);
+}
+
+/* The Snack Duty logo, centred under the games when the coach has uploaded one. */
+footer.brand {
+  text-align: center;
+  padding: 0 1rem 3rem;
+}
+footer.brand[hidden] {
+  display: none;
+}
+.brand .wordmark {
+  /* 200 px: a sign-off, not a banner; the page's content stays the games above it. */
+  height: 200px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
 }
 
 /* Game cards */
@@ -655,13 +658,8 @@ td .sub {
     width: 64px;
     height: 64px;
   }
-  .hero .wrap {
-    flex-wrap: wrap;
-  }
-  .hero .wordmark {
-    height: 110px;
-    max-width: 100%;
-    margin: 0.75rem auto 0;
+  .brand .wordmark {
+    height: 150px;
   }
   .game {
     grid-template-columns: auto 1fr;

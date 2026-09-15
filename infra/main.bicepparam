@@ -1,5 +1,6 @@
-// NOT YET APPLIED: the 2026-09-15 values (siteUrl, linkCustomEmailDomain, emailLive) await the
-// deploy in runbook step 7. Last applied 2026-09-12. Edit and redeploy to change the live configuration.
+// APPLIED 2026-09-15 with these values (the 2026-09-15 changes were made by hand in the portal to the
+// same end state: domain connected, sender snacks@alteonapps.com, EMAIL_FROM/EMAIL_LIVE/SITE_URL app
+// settings). Edit and redeploy to change the live configuration.
 using './main.bicep'
 
 param namePrefix = 'snaccer'

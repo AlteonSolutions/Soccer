@@ -1,4 +1,4 @@
-// APPLIED 2026-09-12 to resource group snaccer-rg (subscription of the coach's Azure account) and
+// APPLIED 2026-09-12 (email domain linked and live email on 2026-09-15) to resource group snaccer-rg (subscription of the coach's Azure account) and
 // authoritative since: change Azure only by changing this file and redeploying it
 // (docs/runbooks/first-deploy.md step 2). Live names: snaccer-web (Static Web App, default host
 // lively-grass-0c651cf0f.5.azurestaticapps.net), snaccerdb3y3xrgf5vpo (storage), snaccer-email,

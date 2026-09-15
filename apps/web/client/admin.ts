@@ -361,6 +361,7 @@ function renderTemplateEditors(): void {
         <p class="placeholders"></p>
         <div class="actions">
           <button type="button" class="primary" data-preview>Preview</button>
+          <button type="button" class="secondary" data-test>Send Me A Test</button>
           <button type="button" class="secondary" data-reset>Reset To Default</button>
         </div>
         <div class="email-preview" hidden>
@@ -387,6 +388,27 @@ function renderTemplateEditors(): void {
         if (!defaultTemplates) return;
         for (const field of TEMPLATE_FIELDS) {
           templateField(kind, field).value = defaultTemplates[kind][field];
+        }
+      });
+      const testButton = body.querySelector("[data-test]") as HTMLButtonElement;
+      testButton.addEventListener("click", async () => {
+        testButton.disabled = true;
+        try {
+          const sent = await request<{ to: string; subject: string }>(
+            "POST",
+            "/api/coach/settings/test",
+            {
+              team_name: (settingsForm.elements.namedItem("team_name") as HTMLInputElement).value,
+              kind,
+              template: readTemplate(kind),
+            },
+          );
+          setStatus("");
+          showToast(`Test sent to ${sent.to} – only you, nobody else.`);
+        } catch (error) {
+          report(error, "Could not send the test.");
+        } finally {
+          testButton.disabled = false;
         }
       });
       const previewButton = body.querySelector("[data-preview]") as HTMLButtonElement;

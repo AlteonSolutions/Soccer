@@ -102,7 +102,8 @@ licensed to use, replace that one file; nothing else references it by content.
 | `DELETE /api/coach/roster/{player}` | admin | `204` |
 | `GET /api/coach/settings` | admin | `{ settings, default_templates, emails }` |
 | `PUT /api/coach/settings` | admin | `SettingsInput` (team name, allergy note, templates) → `200` same shape |
-| `POST /api/coach/settings/preview` | admin | `{ team_name, kind, template }` → `{ subject, text, based_on }` (renders as typed; writes nothing) |
+| `POST /api/coach/settings/preview` | admin | `{ team_name, kind, template }` → `{ to, bcc, subject, text, based_on }` (renders as typed; writes nothing) |
+| `POST /api/coach/settings/test` | admin | same body → sends that rendering to the coach email only → `{ to, subject }` (To/BCC ignored; nothing marked) |
 | `POST /api/coach/logo` | admin | image bytes (≤2 MB, `image/*` content type) → `200 Settings` |
 | `DELETE /api/coach/logo` | admin | back to the built-in badge → `200 Settings` |
 | `GET /api/logo` | public | the uploaded badge, or 404 (the page then keeps `/logo.svg`) |

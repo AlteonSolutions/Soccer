@@ -115,20 +115,33 @@ main {
   position: relative;
 }
 
-/* The note above the games on the public page: plain text, no card. */
+/* The note above the games on the public page: four centred lines, no card. */
 .intro {
-  margin: 0 0.25rem 1.5rem;
+  margin: 0.25rem 0.25rem 1.75rem;
   color: var(--ink);
   text-align: center;
-  font-size: 1.15rem;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 .intro p {
   margin: 0;
 }
+.intro .headline {
+  font-size: 1.7rem;
+  font-weight: 500;
+  margin-bottom: 0.9rem;
+}
+.intro .honest {
+  font-size: 1.3rem;
+  font-weight: 400;
+  margin-bottom: 0.7rem;
+}
+.intro .ask {
+  font-size: 1.1rem;
+  font-style: italic;
+  margin-bottom: 0.7rem;
+}
 .intro .team {
-  margin-top: 0.5rem;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--navy);
 }

@@ -11,8 +11,7 @@ const status = document.getElementById("status") as HTMLParagraphElement;
 const list = document.getElementById("games") as HTMLUListElement;
 const heading = document.getElementById("team-name") as HTMLHeadingElement;
 const intro = document.getElementById("intro") as HTMLElement;
-const introLead = document.getElementById("intro-lead") as HTMLParagraphElement;
-const introAllergies = document.getElementById("intro-allergies") as HTMLParagraphElement;
+const introTeam = document.getElementById("intro-team") as HTMLParagraphElement;
 const badge = document.querySelector(".hero .badge") as HTMLImageElement;
 const favicon = document.querySelector("link[rel=icon]") as HTMLLinkElement;
 
@@ -138,12 +137,9 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
   return item;
 }
 
-/** The note above the games: a thank-you, then the team size and its allergies in one sentence. */
+/** The note above the games: three fixed lines in the HTML, then the team size and allergies. */
 function renderIntro(schedule: ScheduleResponse): void {
-  introLead.textContent =
-    "Thank you for pitching in \u2013 let's be honest, for half the team the snacks are the main event \u2013 " +
-    "each game we need one family to bring snacks for the team.";
-  introAllergies.textContent = describeTeam(schedule.players.length, schedule.allergies);
+  introTeam.textContent = describeTeam(schedule.players.length, schedule.allergies);
   intro.hidden = false;
 }
 

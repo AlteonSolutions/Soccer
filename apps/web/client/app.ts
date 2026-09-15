@@ -14,7 +14,7 @@ const intro = document.getElementById("intro") as HTMLElement;
 const introTeam = document.getElementById("intro-team") as HTMLParagraphElement;
 const badge = document.querySelector(".hero .badge") as HTMLImageElement;
 const wordmark = document.getElementById("wordmark") as HTMLImageElement;
-const eyebrow = document.querySelector(".hero .eyebrow") as HTMLParagraphElement;
+const brand = document.querySelector("footer.brand") as HTMLElement;
 const favicon = document.querySelector("link[rel=icon]") as HTMLLinkElement;
 
 function setStatus(text: string, isError = false): void {
@@ -145,21 +145,15 @@ function renderIntro(schedule: ScheduleResponse): void {
   intro.hidden = false;
 }
 
-/** The badge (with the built-in fallback) and, when uploaded, the Snack Duty logo on the right. */
+/** The badge (with the built-in fallback) and, when uploaded, the Snack Duty logo in the footer. */
 function renderBranding(schedule: ScheduleResponse): void {
   const src = schedule.logo_url ?? "/logo.svg";
   if (badge.getAttribute("src") !== src) badge.src = src;
   favicon.href = src;
-  if (schedule.wordmark_url) {
-    if (wordmark.getAttribute("src") !== schedule.wordmark_url)
-      wordmark.src = schedule.wordmark_url;
-    wordmark.hidden = false;
-    // The logo says "Snack Duty"; the small text above the team name would say it twice.
-    eyebrow.hidden = true;
-  } else {
-    wordmark.hidden = true;
-    eyebrow.hidden = false;
+  if (schedule.wordmark_url && wordmark.getAttribute("src") !== schedule.wordmark_url) {
+    wordmark.src = schedule.wordmark_url;
   }
+  brand.hidden = !schedule.wordmark_url;
 }
 
 async function load(): Promise<void> {

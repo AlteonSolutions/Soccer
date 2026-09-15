@@ -120,7 +120,7 @@ The coach edits, on the admin page: the **team name** (the heading on the sign-u
 `{{team}}` in every email), the **coach email** (where `{{coach}}` goes; empty falls back to
 `COACH_EMAIL`), a comma-separated **food allergies** list, the
 **team badge** (any image up to 2 MB; the header and tab icon on both pages), an optional **Snack
-Duty logo** (shown at the right of the sign-up page's header in place of the "Snack Duty" text),
+Duty logo** (shown centred at the bottom of the sign-up page, under the games),
 and the four
 **email templates** (To, BCC, subject, body). `TEAM_NAME` in the environment is only the
 fallback for a site with no

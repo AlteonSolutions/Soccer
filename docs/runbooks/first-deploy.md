@@ -1,4 +1,4 @@
-# First deploy — signup.alteonapps.com
+# First deploy — snackduty.alteonapps.com
 
 _Status: steps 1–2 performed 2026-09-12; the Bicep is applied and authoritative. Live names:
 resource group `snaccer-rg`, Static Web App `snaccer-web` at
@@ -14,7 +14,7 @@ Azure portal, the Azure CLI and GitHub.
 - Azure CLI installed and signed in: `az login`, then `az account set --subscription "<name>"`.
 - This repo merged to `main` (the deploy jobs only run from `main`).
 - `infra/main.bicepparam` checked: `teamName`, `timeZone`, `coachEmail`. `siteUrl` and
-  `emailCustomDomain` are already set for signup.alteonapps.com.
+  `emailCustomDomain` are already set for snackduty.alteonapps.com.
 
 These commands are written for a bash shell such as Azure Cloud Shell (shell.azure.com), which has
 `az` and `git` ready. In Windows PowerShell, run commands one per line (no `&&`).
@@ -71,22 +71,22 @@ Portal → the Static Web App → **Role management** → Invite: provider *Micr
 Microsoft account email, role `admin`, 24-hour link. Open the link, accept, then go to `/login` on
 the site. `/admin/` now works: paste the team list, add the first game.
 
-## 6. signup.alteonapps.com
+## 6. snackduty.alteonapps.com
 
 At your DNS host for `alteonapps.com`, add:
 
 | Type | Name | Value |
 |---|---|---|
-| CNAME | `signup` | `<staticWebAppDefaultHostname>` (looks like `xxx-yyy.N.azurestaticapps.net`) |
+| CNAME | `snackduty` | `<staticWebAppDefaultHostname>` (looks like `xxx-yyy.N.azurestaticapps.net`) |
 
 Then:
 
 ```
-az staticwebapp hostname set --name <staticWebAppName> --resource-group snaccer-rg --hostname signup.alteonapps.com
+az staticwebapp hostname set --name <staticWebAppName> --resource-group snaccer-rg --hostname snackduty.alteonapps.com
 ```
 
 Validation takes a few minutes after the CNAME propagates; the certificate is issued automatically
-and renews itself. The site answers at https://signup.alteonapps.com, and the default hostname
+and renews itself. The site answers at https://snackduty.alteonapps.com, and the default hostname
 keeps working too.
 
 ## 7. Email from snacks@alteonapps.com
@@ -100,6 +100,13 @@ Portal → **Email Communication Services** → `snaccer-email` → **Provision 
 | SPF | TXT | `@` (apex) | **if `alteonapps.com` already has an SPF record** (Microsoft 365 mail, for example), do not add a second one — merge the `include:` the portal shows into the existing record; a domain may have only one SPF TXT |
 | DKIM | CNAME | `selector1-azurecomm-prod-net._domainkey` | value shown in the portal |
 | DKIM | CNAME | `selector2-azurecomm-prod-net._domainkey` | value shown in the portal |
+
+The DKIM values are the same for every Azure email resource
+(`selector1-azurecomm-prod-net._domainkey.azurecomm.net` and the `selector2` twin), so if the
+domain already sent Azure email once, GoDaddy refuses the "duplicate" and the existing records are
+the right ones. The verification TXT is per resource: a second one next to an older one is fine.
+The value lives at Portal → `snaccer-email` → **Provision domains** → `alteonapps.com` →
+**Verify Domain**, first row.
 
 Click **Verify** on each. It can take up to an hour. When all four show Verified, flip the link:
 

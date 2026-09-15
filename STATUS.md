@@ -34,7 +34,7 @@ client bundle and handler logic (in-memory storage) and screenshotted at desktop
   provider.
 - `platform.apiRuntime: node:22` in `staticwebapp.config.json` is expected to be accepted by SWA.
 
-**Go-live checklist** (target: https://signup.alteonapps.com, sender snacks@alteonapps.com).
+**Go-live checklist** (target: https://snackduty.alteonapps.com, sender snacks@alteonapps.com).
 Each item is a step in `docs/runbooks/first-deploy.md`.
 
 - [x] Merge this branch to `main`.
@@ -44,8 +44,8 @@ Each item is a step in `docs/runbooks/first-deploy.md`.
 - [x] Runbook 5: first deploy 2026-09-12 at lively-grass-0c651cf0f.5.azurestaticapps.net; coach
       invited as `admin`; team list and a game entered. Two platform quirks found and fixed on the
       way: an SWA role rule on `/api/admin/*` and the Functions host's reserved `admin/` route.
-- [ ] Runbook 6: CNAME `signup` → the Static Web App; attach the hostname.
-- [ ] Runbook 7: four DNS records for `alteonapps.com` email; verify; `linkCustomEmailDomain = true`.
+- [ ] Runbook 6: CNAME `snackduty` → the Static Web App (added at GoDaddy 2026-09-15); attach the hostname.
+- [ ] Runbook 7: four DNS records for `alteonapps.com` email (in place at GoDaddy 2026-09-15: SPF and both DKIM CNAMEs already existed from an earlier Azure email setup); verify; `linkCustomEmailDomain = true`.
 - [ ] Runbook 8: `emailLive = 'on'`; sign up once yourself and receive the confirmation.
 
 **After that.** Decide whether parents need to release their own slot (would need a per-claim

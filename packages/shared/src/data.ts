@@ -11,7 +11,7 @@
  *   claims    partitionKey "claim"    rowKey <game id>        columns = Claim fields
  *   roster    partitionKey "member"   rowKey <player, keyed>  columns = RosterMember fields
  *   settings  partitionKey "settings" rowKey "site"           one row: the coach's settings
- *   assets    (blob container)        blob "logo"             the uploaded badge, if any
+ *   assets    (blob container)        blobs "logo", "wordmark" the uploaded badge and header logo
  * Table Storage has no list or object column, so a roster row's `emails` and the settings row's
  * `templates` are stored as JSON strings (`emails_json`, `templates_json`) and unpacked here;
  * nothing outside this file sees those columns. The badge is a blob because an image does not
@@ -29,6 +29,7 @@ import {
   gameSchema,
   rosterMemberSchema,
   settingsSchema,
+  type AssetKind,
   type Claim,
   type Game,
   type LogoAsset,
@@ -64,9 +65,9 @@ export interface DataRepo {
    */
   getSettings(): Promise<StoredSettings | undefined>;
   putSettings(settings: Settings): Promise<void>;
-  getLogo(): Promise<LogoAsset | undefined>;
-  putLogo(logo: LogoAsset): Promise<void>;
-  deleteLogo(): Promise<void>;
+  getLogo(kind: AssetKind): Promise<LogoAsset | undefined>;
+  putLogo(kind: AssetKind, logo: LogoAsset): Promise<void>;
+  deleteLogo(kind: AssetKind): Promise<void>;
 }
 
 const GAME_PK = "game";
@@ -75,7 +76,6 @@ const ROSTER_PK = "member";
 const SETTINGS_PK = "settings";
 const SETTINGS_RK = "site";
 const ASSETS_CONTAINER = "assets";
-const LOGO_BLOB = "logo";
 
 /** Row key for a player: case-insensitive, with the four characters Table Storage forbids mapped. */
 function rosterKey(player: string): string {
@@ -354,9 +354,9 @@ const tableRepo: DataRepo = {
       "Replace",
     );
   },
-  async getLogo() {
+  async getLogo(kind) {
     const { assets } = await getClients();
-    const blob = assets.getBlockBlobClient(LOGO_BLOB);
+    const blob = assets.getBlockBlobClient(kind);
     try {
       const [properties, bytes] = await Promise.all([
         blob.getProperties(),
@@ -372,16 +372,16 @@ const tableRepo: DataRepo = {
       throw error;
     }
   },
-  async putLogo(logo) {
+  async putLogo(kind, logo) {
     const { assets } = await getClients();
-    await assets.getBlockBlobClient(LOGO_BLOB).uploadData(logo.bytes, {
+    await assets.getBlockBlobClient(kind).uploadData(logo.bytes, {
       blobHTTPHeaders: { blobContentType: logo.content_type },
       metadata: { updated_at: logo.updated_at },
     });
   },
-  async deleteLogo() {
+  async deleteLogo(kind) {
     const { assets } = await getClients();
-    await assets.getBlockBlobClient(LOGO_BLOB).deleteIfExists();
+    await assets.getBlockBlobClient(kind).deleteIfExists();
   },
 };
 

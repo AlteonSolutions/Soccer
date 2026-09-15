@@ -167,7 +167,7 @@
         <h3>Team Badge</h3>
         <div class="logo-row">
           <img id="logo-preview" src="/logo.svg" alt="" width="64" height="64" />
-          <form id="logo-form" class="import-form">
+          <form id="logo-form" class="import-form" data-kind="logo">
             <input name="image" type="file" accept="image/*" required />
             <button type="submit" class="primary">Upload Badge</button>
             <button type="button" id="logo-reset" class="secondary">Use Default</button>
@@ -176,6 +176,19 @@
         <p class="hint">
           Any image file up to 2 MB. It appears in the header of both pages and as the browser tab
           icon.
+        </p>
+        <h3>Snack Duty Logo</h3>
+        <div class="logo-row">
+          <img id="wordmark-preview" alt="" width="64" height="64" hidden />
+          <form id="wordmark-form" class="import-form" data-kind="wordmark">
+            <input name="image" type="file" accept="image/*" required />
+            <button type="submit" class="primary">Upload Logo</button>
+            <button type="button" id="wordmark-reset" class="secondary">Remove</button>
+          </form>
+        </div>
+        <p class="hint">
+          Optional. Shown at the right of the sign-up page's header, in place of the small "Snack
+          Duty" text. A transparent PNG looks best on the blue band.
         </p>
       </section>
       <section class="card">

@@ -118,6 +118,7 @@ describe("withData against Azurite", async () => {
         coach_nudge: { to: "{{coach}}", bcc: "", subject: "s", text: "t" },
       },
       logo_updated_at: "2026-09-14T10:00:00.000Z",
+      wordmark_updated_at: null,
     };
     await withData((repo) => repo.putSettings(settings));
     expect(await withData((repo) => repo.getSettings())).toEqual(settings);
@@ -127,10 +128,11 @@ describe("withData against Azurite", async () => {
       bytes: new Uint8Array([137, 80, 78, 71, 1, 2, 3]),
       updated_at: settings.logo_updated_at,
     };
-    await withData((repo) => repo.putLogo(logo));
-    expect(await withData((repo) => repo.getLogo())).toEqual(logo);
-    await withData((repo) => repo.deleteLogo());
-    expect(await withData((repo) => repo.getLogo())).toBeUndefined();
+    await withData((repo) => repo.putLogo("logo", logo));
+    expect(await withData((repo) => repo.getLogo("logo"))).toEqual(logo);
+    expect(await withData((repo) => repo.getLogo("wordmark"))).toBeUndefined();
+    await withData((repo) => repo.deleteLogo("logo"));
+    expect(await withData((repo) => repo.getLogo("logo"))).toBeUndefined();
 
     // The first save on the live site: no badge (null), no allergies (""). Table Storage stores
     // neither as a column, and the read must still succeed with the defaults.

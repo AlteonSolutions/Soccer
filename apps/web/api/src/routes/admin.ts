@@ -10,6 +10,7 @@ import {
   rosterMemberUpdateSchema,
   settingsInputSchema,
   emailPreviewInputSchema,
+  assetKindSchema,
   loadSettings,
   localDateIso,
   sendEmail,
@@ -248,22 +249,26 @@ app.http("coach-settings", {
   },
 });
 
-// The badge: the browser sends the file's bytes with its own content type. DELETE goes back to
-// the built-in badge.
-app.http("coach-logo", {
-  route: "coach/logo",
+// The badge or the Snack Duty logo: the browser sends the file's bytes with its own content type.
+// DELETE goes back to the built-in badge, or to no header logo.
+app.http("coach-asset", {
+  route: "coach/assets/{kind}",
   methods: ["POST", "DELETE"],
   authLevel: "anonymous",
   handler: async (request: HttpRequest, context: InvocationContext) => {
     try {
       requireAdmin(request.headers.get(PRINCIPAL_HEADER));
       const { TEAM_NAME } = loadConfig();
+      const kind = parseParam(request.params.kind, assetKindSchema, "image kind");
       if (request.method === "DELETE") {
-        return json(200, await withData((repo) => removeLogo(repo, TEAM_NAME)));
+        return json(200, await withData((repo) => removeLogo(repo, TEAM_NAME, kind)));
       }
       const bytes = new Uint8Array(await request.arrayBuffer());
       const type = request.headers.get("content-type");
-      return json(200, await withData((repo) => putLogo(repo, TEAM_NAME, type, bytes, new Date())));
+      return json(
+        200,
+        await withData((repo) => putLogo(repo, TEAM_NAME, kind, type, bytes, new Date())),
+      );
     } catch (error) {
       return toErrorResponse(error, context);
     }

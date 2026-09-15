@@ -88,6 +88,8 @@ export const scheduleResponseSchema = z
     allergies: z.string(),
     // Versioned URL of the uploaded badge, or null to use the built-in one.
     logo_url: z.string().nullable(),
+    // Versioned URL of the uploaded Snack Duty logo for the header, or null for none.
+    wordmark_url: z.string().nullable(),
     games: z.array(publicGameSchema),
     players: z.array(playerName),
   })
@@ -189,9 +191,16 @@ export const settingsSchema = settingsInputSchema
     // Defaulted: Table Storage drops a null column on write, so the row comes back without it. The
     // first saved settings on the live site had no badge, and every page read 503'd until this.
     logo_updated_at: z.string().nullable().default(null),
+    // The same for the Snack Duty logo shown at the right of the public header.
+    wordmark_updated_at: z.string().nullable().default(null),
   })
   .strict();
 export type Settings = z.infer<typeof settingsSchema>;
+
+/** The two uploadable images: the team badge ("logo") and the Snack Duty header logo. */
+export const ASSET_KINDS = ["logo", "wordmark"] as const;
+export type AssetKind = (typeof ASSET_KINDS)[number];
+export const assetKindSchema = z.enum(ASSET_KINDS);
 
 /** An uploaded badge as stored: the bytes and the type the browser must be told. */
 export interface LogoAsset {

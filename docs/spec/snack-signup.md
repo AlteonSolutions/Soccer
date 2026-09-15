@@ -104,9 +104,9 @@ licensed to use, replace that one file; nothing else references it by content.
 | `PUT /api/coach/settings` | admin | `SettingsInput` (team name, allergy note, templates) → `200` same shape |
 | `POST /api/coach/settings/preview` | admin | `{ team_name, kind, template }` → `{ to, bcc, subject, text, based_on }` (renders as typed; writes nothing) |
 | `POST /api/coach/settings/test` | admin | same body → sends that rendering to the coach email only → `{ to, subject }` (To/BCC ignored; nothing marked) |
-| `POST /api/coach/logo` | admin | image bytes (≤2 MB, `image/*` content type) → `200 Settings` |
-| `DELETE /api/coach/logo` | admin | back to the built-in badge → `200 Settings` |
-| `GET /api/logo` | public | the uploaded badge, or 404 (the page then keeps `/logo.svg`) |
+| `POST /api/coach/assets/{kind}` | admin | image bytes (≤2 MB, `image/*` content type); `kind` is `logo` (badge) or `wordmark` (Snack Duty header logo) → `200 Settings` |
+| `DELETE /api/coach/assets/{kind}` | admin | back to the built-in badge, or no header logo → `200 Settings` |
+| `GET /api/assets/{kind}` | public | the uploaded image, or 404 (the page then keeps `/logo.svg`, or shows no header logo) |
 
 Errors are `{ error: { code, message } }` with the codes in `packages/shared/src/errors.ts`.
 The admin **page** is gated by the SWA route rule `/admin/*`. The admin **API** is gated by
@@ -119,7 +119,9 @@ was tried first and made those routes 404 for everyone, admin included; it is de
 The coach edits, on the admin page: the **team name** (the heading on the sign-up page and the
 `{{team}}` in every email), the **coach email** (where `{{coach}}` goes; empty falls back to
 `COACH_EMAIL`), a comma-separated **food allergies** list, the
-**team badge** (any image up to 2 MB; the header and tab icon on both pages), and the four
+**team badge** (any image up to 2 MB; the header and tab icon on both pages), an optional **Snack
+Duty logo** (shown at the right of the sign-up page's header in place of the "Snack Duty" text),
+and the four
 **email templates** (To, BCC, subject, body). `TEAM_NAME` in the environment is only the
 fallback for a site with no
 settings row yet. Above the games the sign-up page shows a thank-you line and one sentence with
@@ -129,9 +131,10 @@ allergy", "peanut and tree nut food allergies", or "no food allergies".
 ## Data
 
 Four Table Storage tables and one blob. `settings`: partition `settings`, row key `site`, one
-row: team_name, coach_email, allergies, logo_updated_at, templates_json. The badge is the blob `assets/logo`
-(an image does not fit a 64 KB table property); `logo_updated_at` versions its public URL so a
-new upload is never served from cache. `roster`: partition `member`, row key = player name lower-cased (with
+row: team_name, coach_email, allergies, logo_updated_at, wordmark_updated_at, templates_json. The
+badge and the Snack Duty logo are the blobs `assets/logo` and `assets/wordmark` (an image does not
+fit a 64 KB table property); the `*_updated_at` columns version their public URLs so a new upload
+is never served from cache. `roster`: partition `member`, row key = player name lower-cased (with
 the four characters Table Storage forbids in keys mapped to `_`), columns player, emails_json,
 added_at, position (the roster order; lists sort by it, then by name). Table Storage has no list column, so `emails` is a JSON string on disk and a `string[]`
 everywhere else; only `data.ts` knows. `games`: partition `game`, row key = game id (`YYYY-MM-DD-opponent-slug`).

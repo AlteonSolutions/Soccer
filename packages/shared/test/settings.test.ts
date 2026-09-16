@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createMemoryRepo } from "../src/data-memory.js";
-import { assetUrlFor, loadSettings, resolveSettings } from "../src/settings.js";
+import { assetUrlFor, emailBranding, loadSettings, resolveSettings } from "../src/settings.js";
 import { DEFAULT_TEMPLATES } from "../src/templates.js";
 
 describe("resolveSettings", () => {
@@ -45,5 +45,26 @@ describe("resolveSettings", () => {
     expect((await loadSettings(repo, "Our Team")).team_name).toBe("Our Team");
     await repo.putSettings({ ...resolveSettings(undefined, "x"), team_name: "Stored" });
     expect((await loadSettings(repo, "Our Team")).team_name).toBe("Stored");
+  });
+
+  it("builds absolute badge and logo URLs for emails, with the built-in badge as the fallback", () => {
+    const plain = resolveSettings(undefined, "Our Team");
+    expect(emailBranding(plain, "Our Team", "https://example.org/")).toEqual({
+      teamName: "Our Team",
+      siteUrl: "https://example.org/",
+      badgeUrl: "https://example.org/logo.svg",
+      wordmarkUrl: null,
+    });
+    const branded = {
+      ...plain,
+      logo_updated_at: "2026-09-14T10:00:00.000Z",
+      wordmark_updated_at: "2026-09-15T10:00:00.000Z",
+    };
+    expect(emailBranding(branded, "Snack City", "https://example.org")).toEqual({
+      teamName: "Snack City",
+      siteUrl: "https://example.org",
+      badgeUrl: "https://example.org/api/assets/logo?v=2026-09-14T10%3A00%3A00.000Z",
+      wordmarkUrl: "https://example.org/api/assets/wordmark?v=2026-09-15T10%3A00%3A00.000Z",
+    });
   });
 });

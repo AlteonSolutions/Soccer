@@ -11,6 +11,7 @@ import {
   DEFAULT_TEMPLATES,
   EMAIL_KINDS,
   EMAIL_TITLES,
+  emailBranding,
   formatDate,
   isPastGame,
   loadSettings,
@@ -179,8 +180,7 @@ export async function previewEmail(
     reminded_at: null,
   };
   const site = {
-    teamName: input.team_name,
-    siteUrl,
+    ...emailBranding(settings, input.team_name, siteUrl),
     coachEmail: settings.coach_email || fallbackCoachEmail,
     allergies: settings.allergies,
     templates: { ...settings.templates, [input.kind]: input.template },
@@ -238,6 +238,12 @@ export async function sendTestEmail(
     );
   }
   const preview = await previewEmail(repo, input, siteUrl, teamName, fallbackCoachEmail, today);
-  await sendEmail({ to: [to], bcc: [], subject: preview.subject, text: preview.text });
+  await sendEmail({
+    to: [to],
+    bcc: [],
+    subject: preview.subject,
+    text: preview.text,
+    html: preview.html,
+  });
   return { to, subject: preview.subject };
 }

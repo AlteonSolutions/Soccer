@@ -33,6 +33,8 @@ describe("renderTemplate", () => {
       teamName: "City",
       siteUrl: "https://example.org",
       coachEmail: undefined,
+      badgeUrl: "https://example.org/logo.svg",
+      wordmarkUrl: null,
       allergies: "",
       templates: {
         ...DEFAULT_TEMPLATES,

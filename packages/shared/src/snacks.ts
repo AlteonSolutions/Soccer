@@ -18,6 +18,7 @@ import type {
 import { allergyList, formatDate, formatKickoff, joinWithAnd } from "./format.js";
 import { renderTemplate, resolveRecipients, type RecipientVars } from "./templates.js";
 import type { EmailMessage } from "./email.js";
+import { renderEmailHtml } from "./email-html.js";
 
 /** Calendar date (YYYY-MM-DD) of `now` in the team's time zone, not in UTC. */
 export function localDateIso(now: Date, timeZone: string): string {
@@ -167,6 +168,23 @@ export interface EmailSite {
   /** The coach's comma-separated allergy list; "" when there are none. */
   allergies: string;
   templates: EmailTemplates;
+  /** Absolute badge URL for the email header; the built-in badge when none is uploaded. */
+  badgeUrl: string;
+  /** Absolute Snack Duty logo URL for the email footer, or null when none is uploaded. */
+  wordmarkUrl: string | null;
+}
+
+/** The rendered subject and text plus the branded HTML body, as one message. */
+function withHtml(
+  site: EmailSite,
+  recipients: { to: string[]; bcc: string[] },
+  rendered: { subject: string; text: string },
+): EmailMessage {
+  return {
+    ...recipients,
+    ...rendered,
+    html: renderEmailHtml(site, rendered.subject, rendered.text),
+  };
 }
 
 /** What each To/BCC placeholder expands to for an email about `player` (or nobody's). */
@@ -213,10 +231,11 @@ export function confirmationEmail(
   roster: readonly RosterMember[],
 ): EmailMessage {
   const template = site.templates.claim_confirmation;
-  return {
-    ...resolveRecipients(template, recipientVars(site, roster, claim.player)),
-    ...renderTemplate(template, { ...gameVars(game, site), player: claim.player }),
-  };
+  return withHtml(
+    site,
+    resolveRecipients(template, recipientVars(site, roster, claim.player)),
+    renderTemplate(template, { ...gameVars(game, site), player: claim.player }),
+  );
 }
 
 export function reminderEmail(
@@ -226,14 +245,15 @@ export function reminderEmail(
   roster: readonly RosterMember[],
 ): EmailMessage {
   const template = site.templates.snack_reminder;
-  return {
-    ...resolveRecipients(template, recipientVars(site, roster, claim.player)),
-    ...renderTemplate(template, {
+  return withHtml(
+    site,
+    resolveRecipients(template, recipientVars(site, roster, claim.player)),
+    renderTemplate(template, {
       ...gameVars(game, site),
       player: claim.player,
       allergies: describeAllergies(site.allergies),
     }),
-  };
+  );
 }
 
 /** Thursday's note to every family. Names the player whose family has snacks; never an email. */
@@ -247,10 +267,11 @@ export function teamReminderEmail(
     ? `Snacks: ${claim.player}.`
     : `Snacks: nobody has signed up yet – grab the slot at ${site.siteUrl}`;
   const template = site.templates.team_reminder;
-  return {
-    ...resolveRecipients(template, recipientVars(site, roster, claim?.player)),
-    ...renderTemplate(template, { ...gameVars(game, site), snacks }),
-  };
+  return withHtml(
+    site,
+    resolveRecipients(template, recipientVars(site, roster, claim?.player)),
+    renderTemplate(template, { ...gameVars(game, site), snacks }),
+  );
 }
 
 export function unclaimedNudgeEmail(
@@ -260,15 +281,16 @@ export function unclaimedNudgeEmail(
 ): EmailMessage {
   const list = games.map((g) => `  - ${describeGame(g)}`).join("\n");
   const template = site.templates.coach_nudge;
-  return {
-    ...resolveRecipients(template, recipientVars(site, roster, undefined)),
-    ...renderTemplate(template, {
+  return withHtml(
+    site,
+    resolveRecipients(template, recipientVars(site, roster, undefined)),
+    renderTemplate(template, {
       team: site.teamName,
       count: String(games.length),
       games: list,
       site_url: site.siteUrl,
     }),
-  };
+  );
 }
 
 /** How many addresses a message reaches, To and BCC together. */

@@ -25,6 +25,9 @@ export interface ClaimContext {
   siteUrl: string;
   /** Where {{coach}} goes: the settings' coach email, else COACH_EMAIL, else nobody. */
   coachEmail: string | undefined;
+  /** Absolute badge and logo URLs for the HTML email, from emailBranding(). */
+  badgeUrl: string;
+  wordmarkUrl: string | null;
   /** The coach's allergy list, for the emails that mention it. */
   allergies: string;
   /** The coach's email copy, from the site settings. */

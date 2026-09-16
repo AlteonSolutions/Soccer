@@ -121,7 +121,8 @@ describe("withData against Azurite", async () => {
       wordmark_updated_at: null,
     };
     await withData((repo) => repo.putSettings(settings));
-    expect(await withData((repo) => repo.getSettings())).toEqual(settings);
+    // Through the resolver: Table Storage drops the null wordmark column and the resolver restores it.
+    expect(await withData((repo) => loadSettings(repo, "Fallback"))).toEqual(settings);
 
     const logo = {
       content_type: "image/png",

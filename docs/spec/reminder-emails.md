@@ -26,7 +26,12 @@ retried the following Monday). Azure Communication Services takes at most 50 rec
 message, so a longer list goes out as several messages: the first with To and the first BCCs,
 the rest BCC only.
 
-Every email is plain text, from `EMAIL_FROM` on the verified domain, with the site URL at the end.
+Every email goes out from `EMAIL_FROM` on the verified domain as HTML with a plain-text
+alternative. The coach edits plain text with placeholders; `packages/shared/src/email-html.ts`
+renders it as paragraphs inside a small branded layout (badge and team name on a sky-blue band,
+an "Open The Schedule" button, the Snack Duty logo as a sign-off when one is uploaded; images are
+fetched from the site by absolute URL). Everything typed is escaped; bare URLs become links.
+Preview on the admin page shows the rendered HTML.
 
 ## Templates
 

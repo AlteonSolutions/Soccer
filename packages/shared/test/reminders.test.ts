@@ -18,6 +18,8 @@ function ctx(overrides: Partial<RunContext> = {}): RunContext {
     teamName: "Manchester City",
     siteUrl: "http://localhost:4280",
     coachEmail: undefined,
+    badgeUrl: "http://localhost:4280/logo.svg",
+    wordmarkUrl: null,
     allergies: "",
     templates: DEFAULT_TEMPLATES,
     sendEmail,

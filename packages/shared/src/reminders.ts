@@ -37,6 +37,9 @@ export interface RunContext {
   templates: EmailTemplates;
   /** Where {{coach}} goes: the settings' coach email, else COACH_EMAIL, else nobody. */
   coachEmail: string | undefined;
+  /** Absolute badge and logo URLs for the HTML email, from emailBranding(). */
+  badgeUrl: string;
+  wordmarkUrl: string | null;
   sendEmail: SendEmail;
   log: (line: string) => void;
 }

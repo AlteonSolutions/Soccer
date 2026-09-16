@@ -100,10 +100,10 @@ function claimForm(game: PublicGame, onDone: () => void): HTMLFormElement {
   return form;
 }
 
-function renderGame(game: PublicGame, today: string): HTMLLIElement {
+function renderGame(game: PublicGame, today: string, isNext: boolean): HTMLLIElement {
   const item = document.createElement("li");
   const past = game.date < today;
-  item.className = past ? "game past" : "game";
+  item.className = past ? "game past" : isNext ? "game next" : "game";
   const parts = dateParts(game.date);
   item.innerHTML = `
     <div class="date-tile" aria-hidden="true">
@@ -119,6 +119,14 @@ function renderGame(game: PublicGame, today: string): HTMLLIElement {
   (item.querySelector("h2") as HTMLElement).textContent = `vs ${game.opponent}`;
   (item.querySelector(".kickoff") as HTMLElement).textContent =
     `${formatDate(game.date)} · ${formatKickoff(game.kickoff)}`;
+
+  if (isNext) {
+    // Appended after the markup above: setting innerHTML would wipe anything added before it.
+    const tag = document.createElement("span");
+    tag.className = "next-tag";
+    tag.textContent = "Next Game";
+    item.append(tag);
+  }
 
   const snack = item.querySelector(".snack") as HTMLElement;
   if (game.snack_by || past) {
@@ -164,7 +172,14 @@ async function load(): Promise<void> {
     document.title = `${schedule.team_name} Snack Duty`;
     renderBranding(schedule);
     renderIntro(schedule);
-    list.replaceChildren(...schedule.games.map((g) => renderGame(g, todayIso())));
+    // The first game still to be played is called out; the list is already in date order.
+    const today = todayIso();
+    const nextId = schedule.games.find((g) => g.date >= today)?.id;
+    list.replaceChildren(
+      ...schedule.games.map((g, i) =>
+        Object.assign(renderGame(g, today, g.id === nextId), { style: `--i: ${i}` }),
+      ),
+    );
     if (schedule.games.length === 0) setStatus("No games on the schedule yet.");
     else if (players.length === 0)
       setStatus("The coach has not added the team list yet, so sign-ups are not open.");

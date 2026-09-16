@@ -22,6 +22,8 @@ const site = {
   teamName: "Manchester City",
   siteUrl: "https://example.org",
   coachEmail: "coach@example.com",
+  badgeUrl: "https://example.org/logo.svg",
+  wordmarkUrl: null,
   allergies: "peanut, tree nut",
   templates: DEFAULT_TEMPLATES,
 };
@@ -173,6 +175,10 @@ describe("emails", () => {
     expect(copy.subject).toBe("Manchester City: snacks this week – 9/19");
     expect(copy.to).toEqual(["sam@example.com", "dad@example.com"]);
     expect(copy.bcc).toEqual([]);
+    // The HTML body says the same thing, branded, with the badge and a link to the site.
+    expect(copy.html).toContain("Leo Rivera&#39;s family".replace("&#39;", "'"));
+    expect(copy.html).toContain('src="https://example.org/logo.svg"');
+    expect(copy.html).toContain("Open The Schedule");
     expect(copy.text).toContain("Leo Rivera's family");
     expect(copy.text).toContain("Red Dragons");
     expect(copy.text).toContain("https://example.org");

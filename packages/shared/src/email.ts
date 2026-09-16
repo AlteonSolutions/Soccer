@@ -15,7 +15,10 @@ export interface EmailMessage {
   to: string[];
   bcc: string[];
   subject: string;
+  /** The plain-text body, always present: what the coach edits and what text-only clients show. */
   text: string;
+  /** The branded HTML body (email-html.ts); the same words, laid out. */
+  html?: string;
 }
 
 // Azure Communication Services accepts at most 50 recipients (To + CC + BCC) per message. A
@@ -92,7 +95,7 @@ export const sendEmail: SendEmail = async (message) => {
           to: chunk.to.map((address) => ({ address })),
           bcc: chunk.bcc.map((address) => ({ address })),
         },
-        content: { subject: message.subject, plainText: message.text },
+        content: { subject: message.subject, plainText: message.text, html: message.html },
       });
       const result = await poller.pollUntilDone();
       if (result.status !== "Succeeded") {

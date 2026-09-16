@@ -63,6 +63,7 @@ interface EmailPreview {
   bcc: string[];
   subject: string;
   text: string;
+  html?: string;
   based_on: { game: string; player: string };
 }
 
@@ -371,7 +372,7 @@ function renderTemplateEditors(): void {
           <p class="based-on"></p>
           <p class="recipients-line"></p>
           <p class="subject"></p>
-          <pre></pre>
+          <iframe class="email-frame" title="Email preview" sandbox=""></iframe>
         </div>`;
       for (const input of body.querySelectorAll<HTMLInputElement>("[data-field]")) {
         input.name = `${kind}.${input.dataset["field"]}`;
@@ -431,7 +432,9 @@ function renderTemplateEditors(): void {
             (preview.bcc.length ? `\nBCC: ${preview.bcc.join(", ")}` : "");
           (previewBox.querySelector(".subject") as HTMLElement).textContent =
             `Subject: ${preview.subject}`;
-          (previewBox.querySelector("pre") as HTMLElement).textContent = preview.text;
+          // Rendered in a sandboxed frame: the HTML is ours, but a frame keeps its styles apart.
+          (previewBox.querySelector("iframe") as HTMLIFrameElement).srcdoc =
+            preview.html ?? `<pre>${preview.text}</pre>`;
           previewBox.hidden = false;
         } catch (error) {
           report(error, "Could not preview that email.");

@@ -1,6 +1,7 @@
 import { app, type HttpRequest, type InvocationContext } from "@azure/functions";
 import {
   loadConfig,
+  emailBranding,
   loadSettings,
   localDateIso,
   runReminders,
@@ -26,8 +27,7 @@ app.http("jobs-reminders", {
         return runReminders(repo, {
           now,
           today: localDateIso(now, config.TIMEZONE),
-          teamName: settings.team_name,
-          siteUrl: config.SITE_URL,
+          ...emailBranding(settings, settings.team_name, config.SITE_URL),
           coachEmail: settings.coach_email || config.COACH_EMAIL,
           allergies: settings.allergies,
           templates: settings.templates,

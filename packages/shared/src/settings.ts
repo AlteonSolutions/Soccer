@@ -47,3 +47,20 @@ export function assetUrlFor(settings: Settings, kind: AssetKind): string | null 
   const version = kind === "logo" ? settings.logo_updated_at : settings.wordmark_updated_at;
   return version ? `/api/assets/${kind}?v=${encodeURIComponent(version)}` : null;
 }
+
+/** The badge and logo URLs an email can fetch: absolute, on the site, versioned like the page's. */
+export function emailBranding(
+  settings: Settings,
+  teamName: string,
+  siteUrl: string,
+): { teamName: string; siteUrl: string; badgeUrl: string; wordmarkUrl: string | null } {
+  const base = siteUrl.replace(/\/$/, "");
+  const badge = assetUrlFor(settings, "logo") ?? "/logo.svg";
+  const wordmark = assetUrlFor(settings, "wordmark");
+  return {
+    teamName,
+    siteUrl,
+    badgeUrl: `${base}${badge}`,
+    wordmarkUrl: wordmark ? `${base}${wordmark}` : null,
+  };
+}

@@ -132,6 +132,8 @@ describe("previewEmail", () => {
     );
     expect(preview.subject).toBe("Snack City snacks 9/19");
     expect(preview.text).toBe("Leo Rivera vs Red Dragons");
+    expect(preview.html).toContain("Leo Rivera vs Red Dragons");
+    expect(preview.html).toContain("Snack City");
     // The claim's player is Leo Rivera; only Mia Chen is on the list, so parents resolve to nobody.
     expect(preview.to).toEqual([]);
     expect(preview.bcc).toEqual(["fallback-coach@example.com"]);
@@ -206,6 +208,7 @@ describe("sendTestEmail", () => {
     expect(sent[0]?.to).toEqual(["coach@example.com"]);
     expect(sent[0]?.bcc).toEqual([]);
     expect(sent[0]?.text).toContain("Snacks: Leo Rivera.");
+    expect(sent[0]?.html).toContain("Snacks: Leo Rivera.");
     expect((await repo.getGame(game().id))?.team_reminded_at).toBeNull();
   });
 
